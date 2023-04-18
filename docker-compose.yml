@@ -1,0 +1,8 @@
+version: '3.4'
+
+services:
+  remindmebot:
+    image: btron/remindmebot:latest
+    build:
+      context: .
+      dockerfile: RemindMeBot/Dockerfile
