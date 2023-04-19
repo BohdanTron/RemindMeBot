@@ -3,6 +3,7 @@ using Microsoft.Bot.Builder.Integration.AspNet.Core;
 using Microsoft.Bot.Connector.Authentication;
 using RemindMeBot;
 using RemindMeBot.Bots;
+using RemindMeBot.Dialogs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,8 +17,16 @@ builder.Services.AddSingleton<BotFrameworkAuthentication, ConfigurationBotFramew
 // Create the Bot Adapter with error handling enabled
 builder.Services.AddSingleton<IBotFrameworkHttpAdapter, AdapterWithErrorHandler>();
 
-// Add the echobot to the container
-builder.Services.AddTransient<IBot, EchoBot>();
+// Configure State
+builder.Services.AddSingleton<IStorage, MemoryStorage>();
+
+builder.Services.AddSingleton<UserState>();
+builder.Services.AddSingleton<ConversationState>();
+
+// Add the main bot with dialogs to the container
+builder.Services.AddSingleton<UserSettingsDialog>();
+builder.Services.AddSingleton<MainDialog>();
+builder.Services.AddTransient<IBot, MainBot<MainDialog>>();
 
 var app = builder.Build();
 
