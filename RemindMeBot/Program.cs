@@ -4,6 +4,7 @@ using Microsoft.Bot.Connector.Authentication;
 using RemindMeBot;
 using RemindMeBot.Bots;
 using RemindMeBot.Dialogs;
+using RemindMeBot.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,8 +23,9 @@ builder.Services.AddSingleton<IStorage, MemoryStorage>();
 
 builder.Services.AddSingleton<UserState>();
 builder.Services.AddSingleton<ConversationState>();
+builder.Services.AddSingleton<StateService>();
 
-// Add the main bot with dialogs to the container
+// Add the dialogs with the main bot to the container
 builder.Services.AddSingleton<UserSettingsDialog>();
 builder.Services.AddSingleton<MainDialog>();
 builder.Services.AddTransient<IBot, MainBot<MainDialog>>();

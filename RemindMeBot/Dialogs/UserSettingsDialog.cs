@@ -2,13 +2,19 @@
 using Microsoft.Bot.Builder.Dialogs;
 using Microsoft.Bot.Builder.Dialogs.Choices;
 using RemindMeBot.Models;
+using RemindMeBot.Services;
 
 namespace RemindMeBot.Dialogs
 {
     public class UserSettingsDialog : ComponentDialog
     {
-        public UserSettingsDialog() : base(nameof(UserSettingsDialog))
+        private readonly StateService _stateService;
+
+        public UserSettingsDialog(StateService stateService) 
+            : base(nameof(UserSettingsDialog))
         {
+            _stateService = stateService;
+
             AddDialog(new ChoicePrompt($"{nameof(UserSettingsDialog)}.language"));
             AddDialog(new TextPrompt($"{nameof(UserSettingsDialog)}.location"));
 
@@ -45,17 +51,20 @@ namespace RemindMeBot.Dialogs
                 }, cancellationToken);
         }
 
-        private static async Task<DialogTurnResult> SaveUserSettingsStep(WaterfallStepContext stepContext, CancellationToken cancellationToken)
+        private async Task<DialogTurnResult> SaveUserSettingsStep(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
-            var (location, language) = new UserSettings
+            var userSettings = new UserSettings
             {
                 Language = stepContext.Values["language"].ToString()!,
                 Location = stepContext.Result.ToString()!
             };
 
-            // TODO: Save user settings to state
+            await _stateService.UserSettingsPropertyAccessor.SetAsync(stepContext.Context, userSettings, cancellationToken);
 
-            var message = $"Your language is set to {language} and your language is set to {location}.";
+            var (location, language) = await _stateService.UserSettingsPropertyAccessor.GetAsync(stepContext.Context,
+                () => new UserSettings(), cancellationToken);
+
+            var message = $"Your language is set to {language} and your location is set to {location}.";
             await stepContext.Context.SendActivityAsync(MessageFactory.Text(message), cancellationToken);
 
             return await stepContext.EndDialogAsync(cancellationToken: cancellationToken);
