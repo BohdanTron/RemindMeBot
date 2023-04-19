@@ -2,10 +2,10 @@
 {
     public record UserSettings
     {
-        public string Location { get; init; } = string.Empty;
-        public string Language { get; init; } = string.Empty;
+        public string? Location { get; init; }
+        public string? Language { get; init; }
 
-        public void Deconstruct(out string location, out string language)
+        public void Deconstruct(out string? location, out string? language)
         {
             location = Location;
             language = Language;

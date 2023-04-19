@@ -1,21 +1,26 @@
 ﻿using Microsoft.Bot.Builder;
 using Microsoft.Bot.Builder.Dialogs;
+using RemindMeBot.Helpers;
+using RemindMeBot.Models;
+using RemindMeBot.Services;
 
 namespace RemindMeBot.Dialogs
 {
     public class MainDialog : ComponentDialog
     {
+        private readonly StateService _stateService;
         private readonly UserSettingsDialog _userSettingsDialog;
 
-        public MainDialog(UserSettingsDialog userSettingsDialog) : base(nameof(MainDialog))
+        public MainDialog(StateService stateService, UserSettingsDialog userSettingsDialog) : base(nameof(MainDialog))
         {
+            _stateService = stateService;
             _userSettingsDialog = userSettingsDialog;
 
             AddDialog(_userSettingsDialog);
             AddDialog(new WaterfallDialog($"{nameof(MainDialog)}.{nameof(WaterfallDialog)}",
                 new WaterfallStep[]
                 {
-                    ProcessInputStep,
+                    ProcessInputStep
                 }));
 
             InitialDialogId = $"{nameof(MainDialog)}.{nameof(WaterfallDialog)}";
@@ -33,7 +38,12 @@ namespace RemindMeBot.Dialogs
                 // TODO: Implement other commands here
 
                 default:
-                    await stepContext.Context.SendActivityAsync(MessageFactory.Text("Unknown command. Please enter a valid command."), cancellationToken);
+                    var userSettings = await _stateService.UserSettingsPropertyAccessor.GetAsync(stepContext.Context,
+                        () => new UserSettings(), cancellationToken);
+
+                    var message = ResourceKeys.UnknownCommand.ToLocalized(userSettings.Language ?? "en");
+
+                    await stepContext.Context.SendActivityAsync(MessageFactory.Text(message), cancellationToken);
                     break;
             }
 
