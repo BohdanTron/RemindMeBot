@@ -34,7 +34,7 @@ namespace RemindMeBot.Dialogs
             return stepContext.PromptAsync($"{nameof(UserSettingsDialog)}.language",
                 new PromptOptions
                 {
-                    Prompt = MessageFactory.Text("Please choose your language"),
+                    Prompt = MessageFactory.Text("Welcome to the RemindMe Chatbot! Please choose your language:"),
                     Choices = ChoiceFactory.ToChoices(new List<string> {"English", "Українська" }),
                     RetryPrompt = MessageFactory.Text("Please choose an option from the list")
                 }, cancellationToken);
