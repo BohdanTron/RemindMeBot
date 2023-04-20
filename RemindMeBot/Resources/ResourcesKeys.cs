@@ -1,6 +1,6 @@
-﻿namespace RemindMeBot.Helpers
+﻿namespace RemindMeBot.Resources
 {
-    public static class ResourceKeys
+    public static class ResourcesKeys
     {
         public const string AskForLocation = "AskForLocation";
         public const string LanguageAndLocationSet = "LanguageAndLocationSet";

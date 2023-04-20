@@ -1,20 +1,20 @@
 ﻿using Microsoft.Bot.Builder;
 using Microsoft.Bot.Builder.Dialogs;
-using RemindMeBot.Helpers;
-using RemindMeBot.Models;
-using RemindMeBot.Services;
+using Microsoft.Extensions.Localization;
+using RemindMeBot.Resources;
 
 namespace RemindMeBot.Dialogs
 {
     public class MainDialog : ComponentDialog
     {
-        private readonly StateService _stateService;
         private readonly UserSettingsDialog _userSettingsDialog;
+        private readonly IStringLocalizer<BotMessages> _localizer;
 
-        public MainDialog(StateService stateService, UserSettingsDialog userSettingsDialog) : base(nameof(MainDialog))
+        public MainDialog(UserSettingsDialog userSettingsDialog, IStringLocalizer<BotMessages> localizer)
+            : base(nameof(MainDialog))
         {
-            _stateService = stateService;
             _userSettingsDialog = userSettingsDialog;
+            _localizer = localizer;
 
             AddDialog(_userSettingsDialog);
             AddDialog(new WaterfallDialog($"{nameof(MainDialog)}.{nameof(WaterfallDialog)}",
@@ -38,10 +38,7 @@ namespace RemindMeBot.Dialogs
                 // TODO: Implement other commands here
 
                 default:
-                    var userSettings = await _stateService.UserSettingsPropertyAccessor.GetAsync(stepContext.Context,
-                        () => new UserSettings(), cancellationToken);
-
-                    var message = ResourceKeys.UnknownCommand.ToLocalized(userSettings.Language ?? "en");
+                    var message = _localizer[ResourcesKeys.UnknownCommand];
 
                     await stepContext.Context.SendActivityAsync(MessageFactory.Text(message), cancellationToken);
                     break;

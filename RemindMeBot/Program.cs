@@ -12,6 +12,10 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// Add localization
+builder.Services.AddLocalization();
+builder.Services.AddSingleton<LocalizationMiddleware>();
+
 // Create the Bot Framework Authentication to be used with the Bot Adapter
 builder.Services.AddSingleton<BotFrameworkAuthentication, ConfigurationBotFrameworkAuthentication>();
 

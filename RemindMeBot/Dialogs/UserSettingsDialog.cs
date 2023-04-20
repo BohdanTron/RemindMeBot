@@ -1,8 +1,10 @@
-﻿using Microsoft.Bot.Builder;
+﻿using System.Globalization;
+using Microsoft.Bot.Builder;
 using Microsoft.Bot.Builder.Dialogs;
 using Microsoft.Bot.Builder.Dialogs.Choices;
-using RemindMeBot.Helpers;
+using Microsoft.Extensions.Localization;
 using RemindMeBot.Models;
+using RemindMeBot.Resources;
 using RemindMeBot.Services;
 
 namespace RemindMeBot.Dialogs
@@ -10,11 +12,13 @@ namespace RemindMeBot.Dialogs
     public class UserSettingsDialog : ComponentDialog
     {
         private readonly StateService _stateService;
+        private readonly IStringLocalizer<BotMessages> _localizer;
 
-        public UserSettingsDialog(StateService stateService)
+        public UserSettingsDialog(StateService stateService, IStringLocalizer<BotMessages> localizer)
             : base(nameof(UserSettingsDialog))
         {
             _stateService = stateService;
+            _localizer = localizer;
 
             AddDialog(new ChoicePrompt($"{nameof(UserSettingsDialog)}.language"));
             AddDialog(new TextPrompt($"{nameof(UserSettingsDialog)}.location"));
@@ -41,34 +45,43 @@ namespace RemindMeBot.Dialogs
                 }, cancellationToken);
         }
 
-        private static Task<DialogTurnResult> AskForLocationStep(WaterfallStepContext stepContext, CancellationToken cancellationToken)
+        private async Task<DialogTurnResult> AskForLocationStep(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
             var language = ((FoundChoice) stepContext.Result).Value;
             stepContext.Values["language"] = language;
 
-            var code = GetLanguageCode(language);
+            var languageCode = GetLanguageCode(language);
+            var userSettings = new UserSettings
+            {
+                Language = languageCode
+            };
 
-            return stepContext.PromptAsync($"{nameof(UserSettingsDialog)}.location",
+            var culture = new CultureInfo(languageCode);
+            CultureInfo.CurrentCulture = culture;
+            CultureInfo.CurrentUICulture = culture;
+
+            await _stateService.UserSettingsPropertyAccessor.SetAsync(stepContext.Context, userSettings, cancellationToken);
+
+            return await stepContext.PromptAsync($"{nameof(UserSettingsDialog)}.location",
                 new PromptOptions
                 {
-                    Prompt = MessageFactory.Text(ResourceKeys.AskForLocation.ToLocalized(code))
+                    Prompt = MessageFactory.Text(_localizer[ResourcesKeys.AskForLocation].Value)
                 }, cancellationToken);
         }
 
         private async Task<DialogTurnResult> SaveUserSettingsStep(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
-            var language = stepContext.Values["language"].ToString()!;
+            var language = (string) stepContext.Values["language"];
 
             var userSettings = new UserSettings
             {
                 Language = GetLanguageCode(language),
-                Location = stepContext.Result.ToString()
+                Location = (string) stepContext.Result
             };
 
             await _stateService.UserSettingsPropertyAccessor.SetAsync(stepContext.Context, userSettings, cancellationToken);
 
-            var messageTemplate = ResourceKeys.LanguageAndLocationSet.ToLocalized(GetLanguageCode(language));
-            var message = string.Format(messageTemplate, language, userSettings.Location);
+            var message = _localizer[ResourcesKeys.LanguageAndLocationSet, language, userSettings.Location];
 
             await stepContext.Context.SendActivityAsync(MessageFactory.Text(message), cancellationToken);
 
@@ -78,9 +91,9 @@ namespace RemindMeBot.Dialogs
         private static string GetLanguageCode(string language) =>
             language switch
             {
-                "English" => "en",
-                "Українська" => "uk",
-                _ => "en"
+                "English" => "en-US",
+                "Українська" => "uk-UA",
+                _ => "en-US"
             };
     }
 }
