@@ -2,9 +2,9 @@
 {
     public static class ResourcesKeys
     {
-        public const string AskForLocation = "AskForLocation";
-        public const string AskToReEnterLocation = "AskToReEnterLocation";
-        public const string LanguageAndLocationSet = "LanguageAndLocationSet";
-        public const string UnknownCommand = "UnknownCommand";
+        public const string AskForLocation = nameof(AskForLocation);
+        public const string AskToRetryLocation = nameof(AskToRetryLocation);
+        public const string UserSettingsWereSet = nameof(UserSettingsWereSet);
+        public const string UnknownCommand = nameof(UnknownCommand);
     }
 }

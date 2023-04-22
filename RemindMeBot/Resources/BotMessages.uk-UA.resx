@@ -120,13 +120,18 @@
   <data name="AskForLocation" xml:space="preserve">
     <value>Будь ласка вкажіть ваше місцезнаходження (наприклад Київ, Україна)</value>
   </data>
-  <data name="AskToReEnterLocation" xml:space="preserve">
+  <data name="AskToRetryLocation" xml:space="preserve">
     <value>Мені не вдалося знайти ваше місцезнаходження. Для кращої точності, будь ласка вкажіть назву вашого міста та країни</value>
-  </data>
-  <data name="LanguageAndLocationSet" xml:space="preserve">
-    <value>Ваша мова — {0}, а ваше місцезнаходження — {1}, ваша таймзона - {2}, локальний час - {3}</value>
   </data>
   <data name="UnknownCommand" xml:space="preserve">
     <value>Невідома команда. Будь ласка введіть коректну команду</value>
+  </data>
+  <data name="UserSettingsWereSet" xml:space="preserve">
+    <value>Ваші поточні налаштування:
+
+- мова - **{0}**
+- місцезнаходження - **{1}**
+- часова пояс - **{2}**
+- місцевий час - **{3}**</value>
   </data>
 </root>

@@ -120,13 +120,18 @@
   <data name="AskForLocation" xml:space="preserve">
     <value>Please enter your city and country (e.g London, United Kingdom)</value>
   </data>
-  <data name="AskToReEnterLocation" xml:space="preserve">
+  <data name="AskToRetryLocation" xml:space="preserve">
     <value>I couldn't find your location. For better accuracy, please provide both your city and country names</value>
-  </data>
-  <data name="LanguageAndLocationSet" xml:space="preserve">
-    <value>Your language is set to {0}, your location is set to {1}, your timezone - {2}, your local time is {3}</value>
   </data>
   <data name="UnknownCommand" xml:space="preserve">
     <value>Unknown command. Please enter a valid command</value>
+  </data>
+  <data name="UserSettingsWereSet" xml:space="preserve">
+    <value>Your current settings: 
+
+- language - **{0}**
+- location - **{1}**
+- timezone - **{2}**
+- local time - **{3}**</value>
   </data>
 </root>
