@@ -1,3 +1,4 @@
+using AzureMapsToolkit;
 using Microsoft.Bot.Builder;
 using Microsoft.Bot.Builder.Integration.AspNet.Core;
 using Microsoft.Bot.Connector.Authentication;
@@ -15,6 +16,18 @@ builder.Services.AddSwaggerGen();
 // Add localization
 builder.Services.AddLocalization();
 builder.Services.AddSingleton<LocalizationMiddleware>();
+
+// Add services for geolocation
+builder.Services.AddSingleton(new AzureMapsServices(builder.Configuration["AzureMapService:Key"]));
+builder.Services.AddSingleton<LocationService>();
+
+// Configure translation service
+builder.Services.AddHttpClient<TranslationService>(client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration["Translation:Endpoint"]);
+    client.DefaultRequestHeaders.Add("Ocp-Apim-Subscription-Key", builder.Configuration["Translation:Key"]);
+    client.DefaultRequestHeaders.Add("Ocp-Apim-Subscription-Region", builder.Configuration["Translation:Location"]);
+});
 
 // Create the Bot Framework Authentication to be used with the Bot Adapter
 builder.Services.AddSingleton<BotFrameworkAuthentication, ConfigurationBotFrameworkAuthentication>();

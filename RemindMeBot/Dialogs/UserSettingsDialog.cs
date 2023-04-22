@@ -2,6 +2,7 @@
 using Microsoft.Bot.Builder;
 using Microsoft.Bot.Builder.Dialogs;
 using Microsoft.Bot.Builder.Dialogs.Choices;
+using Microsoft.Bot.Schema;
 using Microsoft.Extensions.Localization;
 using RemindMeBot.Models;
 using RemindMeBot.Resources;
@@ -12,18 +13,26 @@ namespace RemindMeBot.Dialogs
     public class UserSettingsDialog : ComponentDialog
     {
         private readonly StateService _stateService;
+        private readonly LocationService _locationService;
+        private readonly TranslationService _translationService;
+
         private readonly IStringLocalizer<BotMessages> _localizer;
 
-        public UserSettingsDialog(StateService stateService, IStringLocalizer<BotMessages> localizer)
-            : base(nameof(UserSettingsDialog))
+        public UserSettingsDialog(
+            StateService stateService,
+            TranslationService translationService,
+            LocationService locationService,
+            IStringLocalizer<BotMessages> localizer) : base(nameof(UserSettingsDialog))
         {
             _stateService = stateService;
+            _translationService = translationService;
+            _locationService = locationService;
             _localizer = localizer;
 
             AddDialog(new ChoicePrompt($"{nameof(UserSettingsDialog)}.language"));
             AddDialog(new TextPrompt($"{nameof(UserSettingsDialog)}.location"));
 
-            AddDialog(new WaterfallDialog($"{nameof(UserSettings)}.{nameof(WaterfallDialog)}",
+            AddDialog(new WaterfallDialog($"{nameof(UserSettingsDialog)}.main",
                 new WaterfallStep[]
                 {
                     AskForLanguageStep,
@@ -31,7 +40,14 @@ namespace RemindMeBot.Dialogs
                     SaveUserSettingsStep
                 }));
 
-            InitialDialogId = $"{nameof(UserSettings)}.{nameof(WaterfallDialog)}";
+            AddDialog(new WaterfallDialog($"{nameof(UserSettingsDialog)}.retryLocation",
+                new WaterfallStep[]
+                {
+                    AskForLocationStep,
+                    SaveUserSettingsStep
+                }));
+
+            InitialDialogId = $"{nameof(UserSettingsDialog)}.main";
         }
 
         private static Task<DialogTurnResult> AskForLanguageStep(WaterfallStepContext stepContext, CancellationToken cancellationToken)
@@ -47,45 +63,76 @@ namespace RemindMeBot.Dialogs
 
         private async Task<DialogTurnResult> AskForLocationStep(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
-            var language = ((FoundChoice) stepContext.Result).Value;
-            stepContext.Values["language"] = language;
+            var options = stepContext.Options as IDictionary<string, object>;
+
+            var language = options is not null && options.TryGetValue("language", out var lang)
+                ? (string) lang
+                : ((FoundChoice) stepContext.Result).Value;
 
             var languageCode = GetLanguageCode(language);
-            var userSettings = new UserSettings
-            {
-                Language = languageCode
-            };
+            SetCurrentCulture(languageCode);
 
-            var culture = new CultureInfo(languageCode);
-            CultureInfo.CurrentCulture = culture;
-            CultureInfo.CurrentUICulture = culture;
+            var prompt = options is not null && options.TryGetValue("retryMessage", out var message)
+                ? (Activity) message
+                : MessageFactory.Text(_localizer[ResourcesKeys.AskForLocation].Value);
 
-            await _stateService.UserSettingsPropertyAccessor.SetAsync(stepContext.Context, userSettings, cancellationToken);
+            stepContext.Values["language"] = language;
+            stepContext.Values["languageCode"] = languageCode;
 
             return await stepContext.PromptAsync($"{nameof(UserSettingsDialog)}.location",
                 new PromptOptions
                 {
-                    Prompt = MessageFactory.Text(_localizer[ResourcesKeys.AskForLocation].Value)
+                    Prompt = prompt,
+                    RetryPrompt = MessageFactory.Text(_localizer[ResourcesKeys.AskToReEnterLocation].Value)
                 }, cancellationToken);
         }
 
         private async Task<DialogTurnResult> SaveUserSettingsStep(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
+            var location = (string) stepContext.Result;
             var language = (string) stepContext.Values["language"];
+            var languageCode = (string) stepContext.Values["languageCode"];
 
+            SetCurrentCulture(languageCode);
+
+            var locationTranslate = languageCode == "uk-UA"
+                ? await _translationService.Translate(location, "uk-UA", "en-US")
+                : location;
+
+            var timeZoneResult = await _locationService.GetUserTimezone(locationTranslate);
+            if (timeZoneResult is null)
+            {
+                var retryMessage = MessageFactory.Text(_localizer[ResourcesKeys.AskToReEnterLocation].Value);
+                var options = new Dictionary<string, object> { { "language", language }, { "retryMessage", retryMessage } };
+
+                return await stepContext.ReplaceDialogAsync($"{nameof(UserSettingsDialog)}.retryLocation", options, cancellationToken);
+            }
+
+            var timeZone = timeZoneResult.TimeZones.First();
             var userSettings = new UserSettings
             {
-                Language = GetLanguageCode(language),
-                Location = (string) stepContext.Result
+                Language = language,
+                LanguageCode = languageCode,
+                Location = location,
+                TimeZoneId = timeZone.Id
             };
-
             await _stateService.UserSettingsPropertyAccessor.SetAsync(stepContext.Context, userSettings, cancellationToken);
 
-            var message = _localizer[ResourcesKeys.LanguageAndLocationSet, language, userSettings.Location];
+            // TODO: Calculate user local time
+            var userLocalTime = string.Empty;
+            
+            var message = _localizer[ResourcesKeys.LanguageAndLocationSet, language, location, timeZone.Id, userLocalTime];
 
             await stepContext.Context.SendActivityAsync(MessageFactory.Text(message), cancellationToken);
 
             return await stepContext.EndDialogAsync(cancellationToken: cancellationToken);
+        }
+
+        private static void SetCurrentCulture(string languageCode)
+        {
+            var culture = new CultureInfo(languageCode);
+            CultureInfo.CurrentCulture = culture;
+            CultureInfo.CurrentUICulture = culture;
         }
 
         private static string GetLanguageCode(string language) =>

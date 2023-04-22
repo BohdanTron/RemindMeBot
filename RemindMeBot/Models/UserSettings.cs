@@ -4,11 +4,7 @@
     {
         public string? Location { get; init; }
         public string? Language { get; init; }
-
-        public void Deconstruct(out string? location, out string? language)
-        {
-            location = Location;
-            language = Language;
-        }
+        public string? LanguageCode { get; init; }
+        public string? TimeZoneId { get; init; }
     }
 }
