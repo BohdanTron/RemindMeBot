@@ -1,19 +1,24 @@
 ﻿using Microsoft.Bot.Builder;
 using Microsoft.Bot.Builder.Dialogs;
 using Microsoft.Extensions.Localization;
+using RemindMeBot.Models;
 using RemindMeBot.Resources;
+using RemindMeBot.Services;
 
 namespace RemindMeBot.Dialogs
 {
     public class MainDialog : ComponentDialog
     {
         private readonly UserSettingsDialog _userSettingsDialog;
+        private readonly StateService _stateService;
+
         private readonly IStringLocalizer<BotMessages> _localizer;
 
-        public MainDialog(UserSettingsDialog userSettingsDialog, IStringLocalizer<BotMessages> localizer)
+        public MainDialog(UserSettingsDialog userSettingsDialog, StateService stateService, IStringLocalizer<BotMessages> localizer)
             : base(nameof(MainDialog))
         {
             _userSettingsDialog = userSettingsDialog;
+            _stateService = stateService;
             _localizer = localizer;
 
             AddDialog(_userSettingsDialog);
@@ -33,7 +38,18 @@ namespace RemindMeBot.Dialogs
             switch (input)
             {
                 case "/start":
-                    return await stepContext.BeginDialogAsync(_userSettingsDialog.Id, cancellationToken: cancellationToken);
+                    var userSettings = await _stateService.UserSettingsPropertyAccessor.GetAsync(stepContext.Context,
+                        () => new UserSettings(), cancellationToken);
+
+                    if (userSettings?.LocalTime is not null)
+                    {
+                        await stepContext.Context.SendActivityAsync(MessageFactory.Text("What to remind you about?"), cancellationToken);
+                    }
+                    else
+                    {
+                        return await stepContext.BeginDialogAsync(_userSettingsDialog.Id, cancellationToken: cancellationToken);
+                    }
+                    break;
 
                 // TODO: Implement other commands here
 

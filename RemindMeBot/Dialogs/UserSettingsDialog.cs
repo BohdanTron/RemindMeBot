@@ -1,12 +1,9 @@
 ﻿using System.Globalization;
-using AzureMapsToolkit.Timezone;
 using Microsoft.Bot.Builder;
 using Microsoft.Bot.Builder.Dialogs;
 using Microsoft.Bot.Builder.Dialogs.Choices;
 using Microsoft.Bot.Schema;
 using Microsoft.Extensions.Localization;
-using NodaTime;
-using NodaTime.Extensions;
 using RemindMeBot.Models;
 using RemindMeBot.Resources;
 using RemindMeBot.Services;
@@ -120,9 +117,8 @@ namespace RemindMeBot.Dialogs
                 TimeZoneId = timeZone.Id
             };
             await _stateService.UserSettingsPropertyAccessor.SetAsync(stepContext.Context, userSettings, cancellationToken);
-            
-            var userLocalTime = GetUserLocalTime(timeZone);
 
+            var userLocalTime = userSettings.LocalTime!;
             var message = _localizer[ResourcesKeys.UserSettingsWereSet, language, location, timeZone.Id, userLocalTime];
 
             await stepContext.Context.SendActivityAsync(MessageFactory.Text(message), cancellationToken);
@@ -144,14 +140,5 @@ namespace RemindMeBot.Dialogs
                 "Українська" => "uk-UA",
                 _ => "en-US"
             };
-
-        private static string GetUserLocalTime(Timezone timeZoneId)
-        {
-            var userTimeZone = DateTimeZoneProviders.Tzdb[timeZoneId.Id];
-            var clock = SystemClock.Instance.InZone(userTimeZone);
-
-            var localTime = $"{clock.GetCurrentTimeOfDay():HH:mm}";
-            return localTime;
-        }
     }
 }
