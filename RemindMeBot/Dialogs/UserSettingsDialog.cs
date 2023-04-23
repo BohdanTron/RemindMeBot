@@ -99,8 +99,8 @@ namespace RemindMeBot.Dialogs
                 ? await _translationService.Translate(location, "uk-UA", "en-US")
                 : location;
 
-            var timeZoneResult = await _locationService.GetUserTimezone(locationTranslate);
-            if (timeZoneResult is null)
+            var preciseLocation = await _locationService.GetLocation(locationTranslate);
+            if (preciseLocation is null)
             {
                 var retryMessage = MessageFactory.Text(_localizer[ResourcesKeys.AskToRetryLocation].Value);
                 var options = new Dictionary<string, object> { { "language", language }, { "retryMessage", retryMessage } };
@@ -108,18 +108,18 @@ namespace RemindMeBot.Dialogs
                 return await stepContext.ReplaceDialogAsync($"{nameof(UserSettingsDialog)}.retryLocation", options, cancellationToken);
             }
 
-            var timeZone = timeZoneResult.TimeZones.First();
+            var timeZoneId = preciseLocation.Timezone.Id;
             var userSettings = new UserSettings
             {
                 Language = language,
                 LanguageCode = languageCode,
-                Location = location,
-                TimeZoneId = timeZone.Id
+                Location = $"{preciseLocation.Address.Country}, {preciseLocation.Address.FreeformAddress}",
+                TimeZoneId = timeZoneId
             };
             await _stateService.UserSettingsPropertyAccessor.SetAsync(stepContext.Context, userSettings, cancellationToken);
 
             var userLocalTime = userSettings.LocalTime!;
-            var message = _localizer[ResourcesKeys.UserSettingsWereSet, language, location, timeZone.Id, userLocalTime];
+            var message = _localizer[ResourcesKeys.UserSettingsWereSet, language, userSettings.Location, timeZoneId, userLocalTime];
 
             await stepContext.Context.SendActivityAsync(MessageFactory.Text(message), cancellationToken);
 

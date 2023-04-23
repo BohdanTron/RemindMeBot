@@ -5,6 +5,8 @@ using AzureMapsToolkit.Timezone;
 
 namespace RemindMeBot.Services
 {
+    public record Location(SearchResultAddress Address, Timezone Timezone);
+
     public class LocationService
     {
         private readonly AzureMapsServices _azureMapsClient;
@@ -12,7 +14,7 @@ namespace RemindMeBot.Services
         public LocationService(AzureMapsServices azureMapsClient) =>
             _azureMapsClient = azureMapsClient;
 
-        public async Task<TimezoneResult?> GetUserTimezone(string location)
+        public async Task<Location?> GetLocation(string location)
         {
             var addressResponse = await _azureMapsClient.GetSearchAddress(new SearchAddressRequest
             {
@@ -24,11 +26,12 @@ namespace RemindMeBot.Services
                 return null;
             }
 
-            var addressResult = addressResponse.Result.Results.First().Position;
+            var address = addressResponse.Result.Results.First();
+            var position = address.Position;
 
             var timeZoneResponse = await _azureMapsClient.GetTimezoneByCoordinates(new TimeZoneRequest
             {
-                Query = $"{addressResult.Lat.ToString(CultureInfo.InvariantCulture)},{addressResult.Lon.ToString(CultureInfo.InvariantCulture)}"
+                Query = $"{position.Lat.ToString(CultureInfo.InvariantCulture)},{position.Lon.ToString(CultureInfo.InvariantCulture)}"
             });
 
             if (timeZoneResponse.Error is not null || !timeZoneResponse.Result.TimeZones.Any())
@@ -36,7 +39,9 @@ namespace RemindMeBot.Services
                 return null;
             }
 
-            return timeZoneResponse.Result;
+            var timezone = timeZoneResponse.Result.TimeZones.First();
+
+            return new Location(address.Address, timezone);
         }
     }
 }
