@@ -40,7 +40,7 @@ builder.Services.AddSingleton<IStorage, MemoryStorage>();
 
 builder.Services.AddSingleton<UserState>();
 builder.Services.AddSingleton<ConversationState>();
-//builder.Services.AddSingleton<IStateService, StateService>();
+builder.Services.AddSingleton<StateService>();
 
 // Add the dialogs with the main bot to the container
 builder.Services.AddSingleton<UserSettingsDialog>();

@@ -1,6 +1,6 @@
-﻿using System.Threading.Tasks;
-using AzureMapsToolkit.Search;
-using AzureMapsToolkit.Timezone;
+﻿using System.Globalization;
+using System.Resources;
+using System.Threading.Tasks;
 using FluentAssertions;
 using Microsoft.Bot.Builder;
 using Microsoft.Bot.Builder.Dialogs;
@@ -32,25 +32,34 @@ namespace RemindMeBot.Tests.Unit.Dialogs
 
             var stateService = new StateService(userState, conversationState);
 
+            var resourceManager = new ResourceManager(
+                $"{typeof(BotMessages).Assembly.GetName().Name}.Resources.BotMessages", typeof(BotMessages).Assembly);
+
+            _localizer[Arg.Any<string>()].Returns(info =>
+            {
+                var key = (string) info[0];
+                var value = resourceManager.GetString(key, CultureInfo.CurrentCulture);
+
+                return value is null ? null : new LocalizedString(key, value);
+            });
+
+            _localizer[Arg.Any<string>(), Arg.Any<object[]>()].Returns(info =>
+            {
+                var key = (string) info[0];
+                var value = resourceManager.GetString(key, CultureInfo.CurrentCulture);
+
+                return value is null ? null : new LocalizedString(key, value);
+            });
+
             _sut = new UserSettingsDialog(stateService, _translationService, _locationService, _localizer);
         }
 
         [Fact]
-        public async Task ShouldSetUserSettings_WhenValid()
+        public async Task ShouldSetUserSettings_WhenValid_English()
         {
             // Arrange
             _locationService.GetLocation(Arg.Any<string>())
                 .Returns(new Location("London", "United Kingdom", "Europe/London"));
-
-            _localizer[Arg.Is(ResourcesKeys.AskForLocation)].Returns(_ =>
-                new LocalizedString(
-                    ResourcesKeys.AskForLocation, "Please enter your city and country (e.g London, United Kingdom)"));
-
-            _localizer[Arg.Is(ResourcesKeys.AskToRetryLocation)].Returns(_ =>
-                new LocalizedString(ResourcesKeys.AskToRetryLocation, "I couldn't find your location. For better accuracy, please provide both your city and country names"));
-
-            _localizer[Arg.Is(ResourcesKeys.UserSettingsWereSet), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>()]
-                .Returns(_ => new LocalizedString(ResourcesKeys.UserSettingsWereSet, "Your current settings:"));
 
             var testClient = new DialogTestClient(Channels.Test, _sut);
 
@@ -69,6 +78,36 @@ namespace RemindMeBot.Tests.Unit.Dialogs
             // Step 3
             reply = await testClient.SendActivityAsync<IMessageActivity>("London, United Kingdom");
             reply.Text.Should().Contain("Your current settings:");
+            testClient.DialogTurnResult.Status.Should().Be(DialogTurnStatus.Complete);
+        }
+
+        [Fact]
+        public async Task ShouldSetUserSettings_WhenValid_Ukrainian()
+        {
+            // Arrange
+            _locationService.GetLocation(Arg.Any<string>())
+                .Returns(new Location("Київ", "Україна", "Europe/Kyiv"));
+
+            _translationService.Translate(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>())
+                .Returns("Kyiv, Ukraine");
+
+            var testClient = new DialogTestClient(Channels.Test, _sut);
+
+            // Act / Assert
+
+            // Step 1
+            var reply = await testClient.SendActivityAsync<IMessageActivity>("start");
+            reply.Text.Should().Be("Welcome to the RemindMe chatbot! Please choose your language: (1) English or (2) Українська");
+            testClient.DialogTurnResult.Status.Should().Be(DialogTurnStatus.Waiting);
+
+            // Step 2
+            reply = await testClient.SendActivityAsync<IMessageActivity>("Українська");
+            reply.Text.Should().Be("Будь ласка вкажіть ваше місцезнаходження (наприклад Київ, Україна)");
+            testClient.DialogTurnResult.Status.Should().Be(DialogTurnStatus.Waiting);
+
+            // Step 3
+            reply = await testClient.SendActivityAsync<IMessageActivity>("Київ, Україна");
+            reply.Text.Should().Contain("Ваші поточні налаштування:");
             testClient.DialogTurnResult.Status.Should().Be(DialogTurnStatus.Complete);
         }
     }
