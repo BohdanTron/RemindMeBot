@@ -19,10 +19,10 @@ builder.Services.AddSingleton<LocalizationMiddleware>();
 
 // Add services for geolocation
 builder.Services.AddSingleton(new AzureMapsServices(builder.Configuration["AzureMapService:Key"]));
-builder.Services.AddSingleton<LocationService>();
+builder.Services.AddSingleton<ILocationService, AzureLocationService>();
 
 // Configure translation service
-builder.Services.AddHttpClient<TranslationService>(client =>
+builder.Services.AddHttpClient<ITranslationService, AzureTranslationService>(client =>
 {
     client.BaseAddress = new Uri(builder.Configuration["Translation:Endpoint"]);
     client.DefaultRequestHeaders.Add("Ocp-Apim-Subscription-Key", builder.Configuration["Translation:Key"]);
@@ -40,7 +40,7 @@ builder.Services.AddSingleton<IStorage, MemoryStorage>();
 
 builder.Services.AddSingleton<UserState>();
 builder.Services.AddSingleton<ConversationState>();
-builder.Services.AddSingleton<StateService>();
+//builder.Services.AddSingleton<IStateService, StateService>();
 
 // Add the dialogs with the main bot to the container
 builder.Services.AddSingleton<UserSettingsDialog>();

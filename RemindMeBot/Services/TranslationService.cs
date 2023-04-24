@@ -3,11 +3,16 @@ using Newtonsoft.Json;
 
 namespace RemindMeBot.Services
 {
-    public class TranslationService
+    public interface ITranslationService
+    {
+        Task<string> Translate(string text, string from, string to);
+    }
+
+    public class AzureTranslationService : ITranslationService
     {
         private readonly HttpClient _httpClient;
 
-        public TranslationService(HttpClient httpClient) =>
+        public AzureTranslationService(HttpClient httpClient) =>
             _httpClient = httpClient;
 
         public async Task<string> Translate(string text, string from, string to)

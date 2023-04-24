@@ -7,11 +7,16 @@ namespace RemindMeBot.Services
 {
     public record Location(SearchResultAddress Address, Timezone Timezone);
 
-    public class LocationService
+    public interface ILocationService
+    {
+        Task<Location?> GetLocation(string location);
+    }
+
+    public class AzureLocationService : ILocationService
     {
         private readonly AzureMapsServices _azureMapsClient;
 
-        public LocationService(AzureMapsServices azureMapsClient) =>
+        public AzureLocationService(AzureMapsServices azureMapsClient) =>
             _azureMapsClient = azureMapsClient;
 
         public async Task<Location?> GetLocation(string location)
