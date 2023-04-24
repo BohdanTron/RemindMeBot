@@ -5,7 +5,7 @@ using AzureMapsToolkit.Timezone;
 
 namespace RemindMeBot.Services
 {
-    public record Location(SearchResultAddress Address, Timezone Timezone);
+    public record Location(string City, string Country, string TimeZoneId);
 
     public interface ILocationService
     {
@@ -46,7 +46,7 @@ namespace RemindMeBot.Services
 
             var timezone = timeZoneResponse.Result.TimeZones.First();
 
-            return new Location(address.Address, timezone);
+            return new Location(address.Address.FreeformAddress, address.Address.Country, timezone.Id);
         }
     }
 }

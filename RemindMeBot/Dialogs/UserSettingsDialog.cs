@@ -107,19 +107,18 @@ namespace RemindMeBot.Dialogs
 
                 return await stepContext.ReplaceDialogAsync($"{nameof(UserSettingsDialog)}.retryLocation", options, cancellationToken);
             }
-
-            var timeZoneId = preciseLocation.Timezone.Id;
+            
             var userSettings = new UserSettings
             {
                 Language = language,
                 LanguageCode = languageCode,
-                Location = $"{preciseLocation.Address.Country}, {preciseLocation.Address.FreeformAddress}",
-                TimeZoneId = timeZoneId
+                Location = $"{preciseLocation.City}, {preciseLocation.Country}",
+                TimeZoneId = preciseLocation.TimeZoneId
             };
             await _stateService.UserSettingsPropertyAccessor.SetAsync(stepContext.Context, userSettings, cancellationToken);
 
             var userLocalTime = userSettings.LocalTime!;
-            var message = _localizer[ResourcesKeys.UserSettingsWereSet, language, userSettings.Location, timeZoneId, userLocalTime];
+            var message = _localizer[ResourcesKeys.UserSettingsWereSet, language, userSettings.Location, preciseLocation.TimeZoneId, userLocalTime];
 
             await stepContext.Context.SendActivityAsync(MessageFactory.Text(message), cancellationToken);
 

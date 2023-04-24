@@ -39,15 +39,8 @@ namespace RemindMeBot.Tests.Unit.Dialogs
         public async Task ShouldSetUserSettings_WhenValid()
         {
             // Arrange
-            var location = new Location(new SearchResultAddress
-            {
-                Country = "United Kingdom",
-                FreeformAddress = "London",
-            }, new Timezone
-            {
-                Id = "Europe/London"
-            });
-            _locationService.GetLocation(Arg.Any<string>()).Returns(location);
+            _locationService.GetLocation(Arg.Any<string>())
+                .Returns(new Location("London", "United Kingdom", "Europe/London"));
 
             _localizer[Arg.Is(ResourcesKeys.AskForLocation)].Returns(_ =>
                 new LocalizedString(
