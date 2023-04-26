@@ -1,6 +1,6 @@
 ﻿namespace RemindMeBot.Resources
 {
-    public static class ResourcesKeys
+    public static class ResourceKeys
     {
         public const string AskForLocation = nameof(AskForLocation);
         public const string AskToRetryLocation = nameof(AskToRetryLocation);

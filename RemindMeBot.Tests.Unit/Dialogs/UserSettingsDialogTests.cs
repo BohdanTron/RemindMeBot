@@ -61,13 +61,14 @@ namespace RemindMeBot.Tests.Unit.Dialogs
 
         [Theory]
         [InlineData("English", "en-US", "London", "United Kingdom", "Europe/London")]
-        [InlineData("Українська", "uk-UA", "Київ", "Українська", "Europe/Kyiv")]
+        [InlineData("Українська", "uk-UA", "Київ", "Україна", "Europe/Kyiv")]
         public async Task ShouldSetUserSettings_WhenHappyPath(string language, string culture, string city, string country, string timeZone)
         {
             // Arrange
             _locationService.GetLocation(Arg.Any<string>())
                 .Returns(new Location(city, country, timeZone));
 
+            var location = $"{city}, {country}";
             var userSettings = new UserSettings
             {
                 Language = language,
@@ -76,29 +77,25 @@ namespace RemindMeBot.Tests.Unit.Dialogs
                 TimeZoneId = timeZone
             };
 
-            // Set the current culture for the test
+            // Set current culture for the test
             CultureInfo.CurrentCulture = new CultureInfo(culture);
             CultureInfo.CurrentUICulture = new CultureInfo(culture);
 
             var testClient = new DialogTestClient(Channels.Test, _sut);
 
+            var inputsAndReplies = new[,]
+            {
+                { "start", "Welcome to the RemindMe chatbot! Please choose your language: (1) English or (2) Українська"},
+                { language, _localizer[ResourceKeys.AskForLocation].Value},
+                { location, _localizer[ResourceKeys.UserSettingsWereSet, language, location, timeZone, userSettings.LocalTime!]}
+            };
+
             // Act / Assert
-
-            // Step 1 
-            var reply = await testClient.SendActivityAsync<IMessageActivity>("start");
-            reply.Text.Should().Be("Welcome to the RemindMe chatbot! Please choose your language: (1) English or (2) Українська");
-            testClient.DialogTurnResult.Status.Should().Be(DialogTurnStatus.Waiting);
-
-            // Step 2 (Valid Language)
-            reply = await testClient.SendActivityAsync<IMessageActivity>(language);
-            reply.Text.Should().Be(_localizer[ResourcesKeys.AskForLocation].Value);
-            testClient.DialogTurnResult.Status.Should().Be(DialogTurnStatus.Waiting);
-
-            // Step 3 (Valid Location)
-            reply = await testClient.SendActivityAsync<IMessageActivity>($"{city}, {country}");
-            var expected = _localizer[ResourcesKeys.UserSettingsWereSet, language, userSettings.Location, timeZone, userSettings.LocalTime!];
-            reply.Text.Should().Be(expected);
-            testClient.DialogTurnResult.Status.Should().Be(DialogTurnStatus.Complete);
+            for (var i = 0; i < inputsAndReplies.GetLength(0); i++)
+            {
+                var reply = await testClient.SendActivityAsync<IMessageActivity>(inputsAndReplies[i, 0]);
+                reply.Text.Should().Be(inputsAndReplies[i, 1]);
+            }
 
             // Check state
             var actualUserSettings = await _stateService.UserSettingsPropertyAccessor.GetAsync(testClient.DialogContext.Context);
@@ -120,7 +117,7 @@ namespace RemindMeBot.Tests.Unit.Dialogs
                 TimeZoneId = timeZone
             };
 
-            // Set the current culture for the test
+            // Set current culture for the test
             CultureInfo.CurrentCulture = new CultureInfo(culture);
             CultureInfo.CurrentUICulture = new CultureInfo(culture);
 
@@ -140,19 +137,19 @@ namespace RemindMeBot.Tests.Unit.Dialogs
 
             // Step 3 (Valid language)
             reply = await testClient.SendActivityAsync<IMessageActivity>(language);
-            reply.Text.Should().Be(_localizer[ResourcesKeys.AskForLocation].Value);
+            reply.Text.Should().Be(_localizer[ResourceKeys.AskForLocation].Value);
             testClient.DialogTurnResult.Status.Should().Be(DialogTurnStatus.Waiting);
 
             // Step 4 (Invalid location)
             _locationService.GetLocation(Arg.Any<string>()).Returns((Location?) null);
             reply = await testClient.SendActivityAsync<IMessageActivity>("Invalid location");
-            reply.Text.Should().Be(_localizer[ResourcesKeys.AskToRetryLocation].Value);
+            reply.Text.Should().Be(_localizer[ResourceKeys.AskToRetryLocation].Value);
             testClient.DialogTurnResult.Status.Should().Be(DialogTurnStatus.Waiting);
 
             // Step 5 (Valid location)
             _locationService.GetLocation(Arg.Any<string>()).Returns(new Location(city, country, timeZone));
             reply = await testClient.SendActivityAsync<IMessageActivity>(location);
-            var expected = _localizer[ResourcesKeys.UserSettingsWereSet, language, location, timeZone, userSettings.LocalTime!];
+            var expected = _localizer[ResourceKeys.UserSettingsWereSet, language, location, timeZone, userSettings.LocalTime!];
             reply.Text.Should().Be(expected);
             testClient.DialogTurnResult.Status.Should().Be(DialogTurnStatus.Complete);
 

@@ -74,7 +74,7 @@ namespace RemindMeBot.Dialogs
 
             var prompt = options is not null && options.TryGetValue("retryMessage", out var message)
                 ? (Activity) message
-                : MessageFactory.Text(_localizer[ResourcesKeys.AskForLocation].Value);
+                : MessageFactory.Text(_localizer[ResourceKeys.AskForLocation].Value);
 
             stepContext.Values["language"] = language;
             stepContext.Values["languageCode"] = languageCode;
@@ -83,7 +83,7 @@ namespace RemindMeBot.Dialogs
                 new PromptOptions
                 {
                     Prompt = prompt,
-                    RetryPrompt = MessageFactory.Text(_localizer[ResourcesKeys.AskToRetryLocation].Value)
+                    RetryPrompt = MessageFactory.Text(_localizer[ResourceKeys.AskToRetryLocation].Value)
                 }, cancellationToken);
         }
 
@@ -102,7 +102,7 @@ namespace RemindMeBot.Dialogs
             var preciseLocation = await _locationService.GetLocation(locationTranslate);
             if (preciseLocation is null)
             {
-                var retryMessage = MessageFactory.Text(_localizer[ResourcesKeys.AskToRetryLocation].Value);
+                var retryMessage = MessageFactory.Text(_localizer[ResourceKeys.AskToRetryLocation].Value);
                 var options = new Dictionary<string, object> { { "language", language }, { "retryMessage", retryMessage } };
 
                 return await stepContext.ReplaceDialogAsync($"{nameof(UserSettingsDialog)}.retryLocation", options, cancellationToken);
@@ -118,7 +118,7 @@ namespace RemindMeBot.Dialogs
             await _stateService.UserSettingsPropertyAccessor.SetAsync(stepContext.Context, userSettings, cancellationToken);
 
             var userLocalTime = userSettings.LocalTime!;
-            var message = _localizer[ResourcesKeys.UserSettingsWereSet, language, userSettings.Location, preciseLocation.TimeZoneId, userLocalTime];
+            var message = _localizer[ResourceKeys.UserSettingsWereSet, language, userSettings.Location, preciseLocation.TimeZoneId, userLocalTime];
 
             await stepContext.Context.SendActivityAsync(MessageFactory.Text(message), cancellationToken);
 

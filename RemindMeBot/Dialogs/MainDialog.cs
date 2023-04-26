@@ -54,7 +54,7 @@ namespace RemindMeBot.Dialogs
                 // TODO: Implement other commands here
 
                 default:
-                    var message = _localizer[ResourcesKeys.UnknownCommand];
+                    var message = _localizer[ResourceKeys.UnknownCommand];
 
                     await stepContext.Context.SendActivityAsync(MessageFactory.Text(message), cancellationToken);
                     break;
