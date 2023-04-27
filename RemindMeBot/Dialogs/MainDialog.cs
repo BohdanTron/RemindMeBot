@@ -41,26 +41,23 @@ namespace RemindMeBot.Dialogs
                     var userSettings = await _stateService.UserSettingsPropertyAccessor.GetAsync(stepContext.Context,
                         () => new UserSettings(), cancellationToken);
 
-                    if (userSettings?.LocalTime is not null)
-                    {
-                        await stepContext.Context.SendActivityAsync(MessageFactory.Text("What to remind you about?"), cancellationToken);
-                    }
-                    else
+                    if (userSettings?.LocalTime is null)
                     {
                         return await stepContext.BeginDialogAsync(_userSettingsDialog.Id, cancellationToken: cancellationToken);
                     }
-                    break;
+
+                    await stepContext.Context.SendActivityAsync(MessageFactory.Text("What to remind you about?"), cancellationToken);
+                    return await stepContext.EndDialogAsync(cancellationToken: cancellationToken);
 
                 // TODO: Implement other commands here
 
                 default:
                     var message = _localizer[ResourceKeys.UnknownCommand];
-
+                    
                     await stepContext.Context.SendActivityAsync(MessageFactory.Text(message), cancellationToken);
-                    break;
-            }
 
-            return await stepContext.EndDialogAsync(cancellationToken: cancellationToken);
+                    return await stepContext.EndDialogAsync(cancellationToken: cancellationToken);
+            }
         }
     }
 }

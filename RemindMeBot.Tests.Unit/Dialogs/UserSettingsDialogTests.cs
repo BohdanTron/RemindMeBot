@@ -1,62 +1,30 @@
 ﻿using System.Globalization;
-using System.Resources;
 using System.Threading.Tasks;
 using FluentAssertions;
-using Microsoft.Bot.Builder;
 using Microsoft.Bot.Builder.Dialogs;
 using Microsoft.Bot.Builder.Testing;
 using Microsoft.Bot.Connector;
 using Microsoft.Bot.Schema;
-using Microsoft.Extensions.Localization;
 using NSubstitute;
 using RemindMeBot.Dialogs;
 using RemindMeBot.Models;
 using RemindMeBot.Resources;
 using RemindMeBot.Services;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace RemindMeBot.Tests.Unit.Dialogs
 {
-    public class UserSettingsDialogTests
+    public class UserSettingsDialogTests : BotTestBase
     {
         private readonly UserSettingsDialog _sut;
 
         private readonly ILocationService _locationService = Substitute.For<ILocationService>();
         private readonly ITranslationService _translationService = Substitute.For<ITranslationService>();
-        private readonly IStringLocalizer<BotMessages> _localizer = Substitute.For<IStringLocalizer<BotMessages>>();
-        private readonly StateService _stateService;
 
-        public UserSettingsDialogTests()
+        public UserSettingsDialogTests(ITestOutputHelper output) : base(output)
         {
-            // Initialize state
-            var memoryStorage = new MemoryStorage();
-            var userState = new UserState(memoryStorage);
-            var conversationState = new ConversationState(memoryStorage);
-
-            _stateService = new StateService(userState, conversationState);
-
-            var resourceManager = new ResourceManager(
-                $"{typeof(BotMessages).Assembly.GetName().Name}.Resources.BotMessages", typeof(BotMessages).Assembly);
-
-            // Mock localizer
-            _localizer[Arg.Any<string>()].Returns(info =>
-            {
-                var key = (string) info[0];
-                var value = resourceManager.GetString(key, CultureInfo.CurrentCulture);
-
-                return value is null ? null : new LocalizedString(key, value);
-            });
-
-            _localizer[Arg.Any<string>(), Arg.Any<object[]>()].Returns(info =>
-            {
-                var key = (string) info[0];
-                var value = resourceManager.GetString(key, CultureInfo.CurrentCulture);
-
-                return value is null ? null : new LocalizedString(key, value);
-            });
-
-            // Initialize sut
-            _sut = new UserSettingsDialog(_stateService, _translationService, _locationService, _localizer);
+            _sut = new UserSettingsDialog(StateService, _translationService, _locationService, Localizer);
         }
 
         [Theory]
@@ -81,13 +49,13 @@ namespace RemindMeBot.Tests.Unit.Dialogs
             CultureInfo.CurrentCulture = new CultureInfo(culture);
             CultureInfo.CurrentUICulture = new CultureInfo(culture);
 
-            var testClient = new DialogTestClient(Channels.Test, _sut);
+            var testClient = new DialogTestClient(Channels.Test, _sut, middlewares: Middlewares);
 
             var inputsAndReplies = new[,]
             {
                 { "start", "Welcome to the RemindMe chatbot! Please choose your language: (1) English or (2) Українська"},
-                { language, _localizer[ResourceKeys.AskForLocation].Value},
-                { location, _localizer[ResourceKeys.UserSettingsWereSet, language, location, timeZone, userSettings.LocalTime!]}
+                { language, Localizer[ResourceKeys.AskForLocation].Value},
+                { location, Localizer[ResourceKeys.UserSettingsWereSet, language, location, timeZone, userSettings.LocalTime!]}
             };
 
             // Act / Assert
@@ -98,7 +66,7 @@ namespace RemindMeBot.Tests.Unit.Dialogs
             }
 
             // Check state
-            var actualUserSettings = await _stateService.UserSettingsPropertyAccessor.GetAsync(testClient.DialogContext.Context);
+            var actualUserSettings = await StateService.UserSettingsPropertyAccessor.GetAsync(testClient.DialogContext.Context);
             actualUserSettings.Should().Be(userSettings);
         }
 
@@ -121,7 +89,7 @@ namespace RemindMeBot.Tests.Unit.Dialogs
             CultureInfo.CurrentCulture = new CultureInfo(culture);
             CultureInfo.CurrentUICulture = new CultureInfo(culture);
 
-            var testClient = new DialogTestClient(Channels.Test, _sut);
+            var testClient = new DialogTestClient(Channels.Test, _sut, middlewares: Middlewares);
 
             // Act / Assert
 
@@ -137,24 +105,24 @@ namespace RemindMeBot.Tests.Unit.Dialogs
 
             // Step 3 (Valid language)
             reply = await testClient.SendActivityAsync<IMessageActivity>(language);
-            reply.Text.Should().Be(_localizer[ResourceKeys.AskForLocation].Value);
+            reply.Text.Should().Be(Localizer[ResourceKeys.AskForLocation].Value);
             testClient.DialogTurnResult.Status.Should().Be(DialogTurnStatus.Waiting);
 
             // Step 4 (Invalid location)
             _locationService.GetLocation(Arg.Any<string>()).Returns((Location?) null);
             reply = await testClient.SendActivityAsync<IMessageActivity>("Invalid location");
-            reply.Text.Should().Be(_localizer[ResourceKeys.AskToRetryLocation].Value);
+            reply.Text.Should().Be(Localizer[ResourceKeys.AskToRetryLocation].Value);
             testClient.DialogTurnResult.Status.Should().Be(DialogTurnStatus.Waiting);
 
             // Step 5 (Valid location)
             _locationService.GetLocation(Arg.Any<string>()).Returns(new Location(city, country, timeZone));
             reply = await testClient.SendActivityAsync<IMessageActivity>(location);
-            var expected = _localizer[ResourceKeys.UserSettingsWereSet, language, location, timeZone, userSettings.LocalTime!];
+            var expected = Localizer[ResourceKeys.UserSettingsWereSet, language, location, timeZone, userSettings.LocalTime!];
             reply.Text.Should().Be(expected);
             testClient.DialogTurnResult.Status.Should().Be(DialogTurnStatus.Complete);
 
             // Check state
-            var actualUserSettings = await _stateService.UserSettingsPropertyAccessor.GetAsync(testClient.DialogContext.Context);
+            var actualUserSettings = await StateService.UserSettingsPropertyAccessor.GetAsync(testClient.DialogContext.Context);
             actualUserSettings.Should().Be(userSettings);
         }
     }

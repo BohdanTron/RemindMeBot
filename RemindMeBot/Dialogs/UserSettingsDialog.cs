@@ -72,13 +72,13 @@ namespace RemindMeBot.Dialogs
             var languageCode = GetLanguageCode(language);
             SetCurrentCulture(languageCode);
 
-            var prompt = options is not null && options.TryGetValue("retryMessage", out var message)
-                ? (Activity) message
-                : MessageFactory.Text(_localizer[ResourceKeys.AskForLocation].Value);
-
             stepContext.Values["language"] = language;
             stepContext.Values["languageCode"] = languageCode;
 
+            var prompt = options is not null && options.TryGetValue("retryMessage", out var message)
+                ? (Activity) message
+                : MessageFactory.Text(_localizer[ResourceKeys.AskForLocation].Value);
+            
             return await stepContext.PromptAsync($"{nameof(UserSettingsDialog)}.location",
                 new PromptOptions
                 {
@@ -122,7 +122,7 @@ namespace RemindMeBot.Dialogs
 
             await stepContext.Context.SendActivityAsync(MessageFactory.Text(message), cancellationToken);
 
-            return await stepContext.EndDialogAsync(cancellationToken: cancellationToken);
+            return await stepContext.EndDialogAsync(userSettings, cancellationToken);
         }
 
         private static void SetCurrentCulture(string languageCode)

@@ -12,6 +12,11 @@ namespace RemindMeBot.Services
         public IStatePropertyAccessor<UserSettings> UserSettingsPropertyAccessor { get; }
         public IStatePropertyAccessor<DialogState> DialogStatePropertyAccessor { get; }
 
+        public StateService((UserState UserState, ConversationState ConversationState) states)
+            : this(states.UserState, states.ConversationState)
+        {
+        }
+
         public StateService(UserState userState, ConversationState conversationState)
         {
             UserState = userState;
