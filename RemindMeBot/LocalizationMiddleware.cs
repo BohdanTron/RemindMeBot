@@ -18,7 +18,7 @@ namespace RemindMeBot
             var userSettings = await _stateService.UserSettingsPropertyAccessor.GetAsync(turnContext,
                 () => new UserSettings(), cancellationToken);
 
-            var cultureInfo = new CultureInfo(userSettings.LanguageCode ?? "en-US");
+            var cultureInfo = new CultureInfo(userSettings.Culture ?? "en-US");
 
             CultureInfo.CurrentCulture = cultureInfo;
             CultureInfo.CurrentUICulture = cultureInfo;

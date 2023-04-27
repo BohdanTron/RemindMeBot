@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿using System.Globalization;
+using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Microsoft.Bot.Builder.Dialogs;
@@ -9,6 +10,7 @@ using NSubstitute;
 using RemindMeBot.Dialogs;
 using RemindMeBot.Models;
 using RemindMeBot.Resources;
+using RemindMeBot.Tests.Unit.Common;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -35,7 +37,7 @@ namespace RemindMeBot.Tests.Unit.Dialogs
                     var expectedUserSettings = new UserSettings
                     {
                         Language = "English",
-                        LanguageCode = "en-US",
+                        Culture = "en-US",
                         Location = "London, United Kingdom",
                         TimeZoneId = "Europe/London"
                     };
@@ -47,10 +49,19 @@ namespace RemindMeBot.Tests.Unit.Dialogs
             _sut = new MainDialog(_userSettingsDialog, StateService, Localizer);
         }
 
-        [Fact]
-        public async Task ShouldHandleMainFlow()
+        [Theory]
+        [InlineData("en-US")]
+        [InlineData("uk-UA")]
+        public async Task ShouldHandleMainFlow(string culture)
         {
             // Arrange
+            
+            // Set current culture for the test
+            SetCurrentCulture(culture);
+
+            // Set current culture for the dialog
+            Middlewares.Add(new TestCultureMiddleware(new CultureInfo(culture)));
+
             var testClient = new DialogTestClient(Channels.Test, _sut, middlewares: Middlewares);
 
             // Act / Assert

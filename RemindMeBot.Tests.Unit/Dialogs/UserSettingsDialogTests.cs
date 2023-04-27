@@ -1,5 +1,4 @@
-﻿using System.Globalization;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using FluentAssertions;
 using Microsoft.Bot.Builder.Dialogs;
 using Microsoft.Bot.Builder.Testing;
@@ -10,6 +9,7 @@ using RemindMeBot.Dialogs;
 using RemindMeBot.Models;
 using RemindMeBot.Resources;
 using RemindMeBot.Services;
+using RemindMeBot.Tests.Unit.Common;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -33,6 +33,8 @@ namespace RemindMeBot.Tests.Unit.Dialogs
         public async Task ShouldSetUserSettings_WhenHappyPath(string language, string culture, string city, string country, string timeZone)
         {
             // Arrange
+            SetCurrentCulture(culture);
+
             _locationService.GetLocation(Arg.Any<string>())
                 .Returns(new Location(city, country, timeZone));
 
@@ -40,14 +42,10 @@ namespace RemindMeBot.Tests.Unit.Dialogs
             var userSettings = new UserSettings
             {
                 Language = language,
-                LanguageCode = culture,
+                Culture = culture,
                 Location = $"{city}, {country}",
                 TimeZoneId = timeZone
             };
-
-            // Set current culture for the test
-            CultureInfo.CurrentCulture = new CultureInfo(culture);
-            CultureInfo.CurrentUICulture = new CultureInfo(culture);
 
             var testClient = new DialogTestClient(Channels.Test, _sut, middlewares: Middlewares);
 
@@ -72,22 +70,20 @@ namespace RemindMeBot.Tests.Unit.Dialogs
 
         [Theory]
         [InlineData("English", "en-US", "London", "United Kingdom", "Europe/London")]
-        [InlineData("Українська", "uk-UA", "Київ", "Українська", "Europe/Kyiv")]
+        [InlineData("Українська", "uk-UA", "Київ", "Україна", "Europe/Kyiv")]
         public async Task ShouldSetUserSettings_WhenInvalidInputFlow(string language, string culture, string city, string country, string timeZone)
         {
             // Arrange
+            SetCurrentCulture(culture);
+
             var location = $"{city}, {country}";
             var userSettings = new UserSettings
             {
                 Language = language,
-                LanguageCode = culture,
+                Culture = culture,
                 Location = location,
                 TimeZoneId = timeZone
             };
-
-            // Set current culture for the test
-            CultureInfo.CurrentCulture = new CultureInfo(culture);
-            CultureInfo.CurrentUICulture = new CultureInfo(culture);
 
             var testClient = new DialogTestClient(Channels.Test, _sut, middlewares: Middlewares);
 

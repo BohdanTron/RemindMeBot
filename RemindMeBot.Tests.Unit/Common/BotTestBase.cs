@@ -10,7 +10,7 @@ using RemindMeBot.Resources;
 using RemindMeBot.Services;
 using Xunit.Abstractions;
 
-namespace RemindMeBot.Tests.Unit
+namespace RemindMeBot.Tests.Unit.Common
 {
     public abstract class BotTestBase
     {
@@ -26,6 +26,12 @@ namespace RemindMeBot.Tests.Unit
             StateService = new StateService(GetInMemoryStates());
             
             SetupLocalizer();
+        }
+
+        protected static void SetCurrentCulture(string culture)
+        {
+            CultureInfo.CurrentCulture = new CultureInfo(culture);
+            CultureInfo.CurrentUICulture = new CultureInfo(culture);
         }
 
         private static (UserState userState, ConversationState) GetInMemoryStates()
@@ -52,7 +58,6 @@ namespace RemindMeBot.Tests.Unit
                 var value = resourceManager.GetString(key, CultureInfo.CurrentCulture);
 
                 return value is null ? null : new LocalizedString(key, value);
-
             }
         }
 

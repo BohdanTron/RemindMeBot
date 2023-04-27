@@ -7,7 +7,7 @@ namespace RemindMeBot.Models
     {
         public string? Location { get; init; }
         public string? Language { get; init; }
-        public string? LanguageCode { get; init; }
+        public string? Culture { get; init; }
         public string? TimeZoneId { get; init; }
         public string? LocalTime => GetLocalTime();
 

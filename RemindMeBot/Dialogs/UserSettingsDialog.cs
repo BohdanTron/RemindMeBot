@@ -69,11 +69,11 @@ namespace RemindMeBot.Dialogs
                 ? (string) lang
                 : ((FoundChoice) stepContext.Result).Value;
 
-            var languageCode = GetLanguageCode(language);
-            SetCurrentCulture(languageCode);
+            var culture = GetCulture(language);
+            SetCurrentCulture(culture);
 
             stepContext.Values["language"] = language;
-            stepContext.Values["languageCode"] = languageCode;
+            stepContext.Values["culture"] = culture;
 
             var prompt = options is not null && options.TryGetValue("retryMessage", out var message)
                 ? (Activity) message
@@ -91,11 +91,11 @@ namespace RemindMeBot.Dialogs
         {
             var location = (string) stepContext.Result;
             var language = (string) stepContext.Values["language"];
-            var languageCode = (string) stepContext.Values["languageCode"];
+            var culture = (string) stepContext.Values["culture"];
 
-            SetCurrentCulture(languageCode);
+            SetCurrentCulture(culture);
 
-            var locationTranslate = languageCode == "uk-UA"
+            var locationTranslate = culture == "uk-UA"
                 ? await _translationService.Translate(location, "uk-UA", "en-US")
                 : location;
 
@@ -111,7 +111,7 @@ namespace RemindMeBot.Dialogs
             var userSettings = new UserSettings
             {
                 Language = language,
-                LanguageCode = languageCode,
+                Culture = culture,
                 Location = $"{preciseLocation.City}, {preciseLocation.Country}",
                 TimeZoneId = preciseLocation.TimeZoneId
             };
@@ -125,14 +125,13 @@ namespace RemindMeBot.Dialogs
             return await stepContext.EndDialogAsync(userSettings, cancellationToken);
         }
 
-        private static void SetCurrentCulture(string languageCode)
+        private static void SetCurrentCulture(string culture)
         {
-            var culture = new CultureInfo(languageCode);
-            CultureInfo.CurrentCulture = culture;
-            CultureInfo.CurrentUICulture = culture;
+            CultureInfo.CurrentCulture = new CultureInfo(culture);
+            CultureInfo.CurrentUICulture = new CultureInfo(culture);
         }
 
-        private static string GetLanguageCode(string language) =>
+        private static string GetCulture(string language) =>
             language switch
             {
                 "English" => "en-US",
