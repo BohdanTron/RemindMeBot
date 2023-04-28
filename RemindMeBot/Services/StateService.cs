@@ -4,7 +4,16 @@ using RemindMeBot.Models;
 
 namespace RemindMeBot.Services
 {
-    public class StateService
+    public interface IStateService
+    {
+        public UserState UserState { get; }
+        public ConversationState ConversationState { get; }
+
+        public IStatePropertyAccessor<UserSettings> UserSettingsPropertyAccessor { get; }
+        public IStatePropertyAccessor<DialogState> DialogStatePropertyAccessor { get; }
+    }
+
+    public class StateService : IStateService
     {
         public UserState UserState { get; }
         public ConversationState ConversationState { get; }

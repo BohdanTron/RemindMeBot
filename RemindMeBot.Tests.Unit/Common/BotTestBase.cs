@@ -7,7 +7,6 @@ using Microsoft.Extensions.Localization;
 using NSubstitute;
 using NSubstitute.Core;
 using RemindMeBot.Resources;
-using RemindMeBot.Services;
 using Xunit.Abstractions;
 
 namespace RemindMeBot.Tests.Unit.Common
@@ -15,16 +14,12 @@ namespace RemindMeBot.Tests.Unit.Common
     public abstract class BotTestBase
     {
         protected List<IMiddleware> Middlewares;
-        protected StateService StateService;
-        
+
         protected IStringLocalizer<BotMessages> Localizer = Substitute.For<IStringLocalizer<BotMessages>>();
 
         protected BotTestBase(ITestOutputHelper output)
         {
             Middlewares = new List<IMiddleware> { new XUnitDialogTestLogger(output) };
-
-            StateService = new StateService(GetInMemoryStates());
-            
             SetupLocalizer();
         }
 
@@ -32,16 +27,6 @@ namespace RemindMeBot.Tests.Unit.Common
         {
             CultureInfo.CurrentCulture = new CultureInfo(culture);
             CultureInfo.CurrentUICulture = new CultureInfo(culture);
-        }
-
-        private static (UserState userState, ConversationState) GetInMemoryStates()
-        {
-            var memoryStorage = new MemoryStorage();
-
-            var userState = new UserState(memoryStorage);
-            var conversationState = new ConversationState(memoryStorage);
-
-            return (userState, conversationState);
         }
 
         private void SetupLocalizer()

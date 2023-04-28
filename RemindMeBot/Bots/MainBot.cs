@@ -8,9 +8,9 @@ namespace RemindMeBot.Bots
     public class MainBot<T> : ActivityHandler where T : Dialog
     {
         private readonly T _dialog;
-        private readonly StateService _stateService;
+        private readonly IStateService _stateService;
 
-        public MainBot(T dialog, StateService stateService)
+        public MainBot(T dialog, IStateService stateService)
         {
             _dialog = dialog;
             _stateService = stateService;

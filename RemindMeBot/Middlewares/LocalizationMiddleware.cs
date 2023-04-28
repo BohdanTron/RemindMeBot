@@ -4,13 +4,13 @@ using RemindMeBot.Models;
 using RemindMeBot.Services;
 using IMiddleware = Microsoft.Bot.Builder.IMiddleware;
 
-namespace RemindMeBot
+namespace RemindMeBot.Middlewares
 {
     public class LocalizationMiddleware : IMiddleware
     {
-        private readonly StateService _stateService;
+        private readonly IStateService _stateService;
 
-        public LocalizationMiddleware(StateService stateService) => 
+        public LocalizationMiddleware(IStateService stateService) => 
             _stateService = stateService;
 
         public async Task OnTurnAsync(ITurnContext turnContext, NextDelegate next, CancellationToken cancellationToken = new())

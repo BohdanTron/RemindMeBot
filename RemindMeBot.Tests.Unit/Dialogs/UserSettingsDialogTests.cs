@@ -19,12 +19,13 @@ namespace RemindMeBot.Tests.Unit.Dialogs
     {
         private readonly UserSettingsDialog _sut;
 
+        private readonly IStateService _stateService = Substitute.For<IStateService>();
         private readonly ILocationService _locationService = Substitute.For<ILocationService>();
         private readonly ITranslationService _translationService = Substitute.For<ITranslationService>();
 
         public UserSettingsDialogTests(ITestOutputHelper output) : base(output)
         {
-            _sut = new UserSettingsDialog(StateService, _translationService, _locationService, Localizer);
+            _sut = new UserSettingsDialog(_stateService, _translationService, _locationService, Localizer);
         }
 
         [Theory]
@@ -63,9 +64,9 @@ namespace RemindMeBot.Tests.Unit.Dialogs
                 reply.Text.Should().Be(inputsAndReplies[i, 1]);
             }
 
-            // Check state
-            var actualUserSettings = await StateService.UserSettingsPropertyAccessor.GetAsync(testClient.DialogContext.Context);
-            actualUserSettings.Should().Be(userSettings);
+            // Check dialog result
+            var actualUserSettings = (UserSettings)testClient.DialogTurnResult.Result;
+            userSettings.Should().Be(actualUserSettings);
         }
 
         [Theory]
@@ -117,9 +118,9 @@ namespace RemindMeBot.Tests.Unit.Dialogs
             reply.Text.Should().Be(expected);
             testClient.DialogTurnResult.Status.Should().Be(DialogTurnStatus.Complete);
 
-            // Check state
-            var actualUserSettings = await StateService.UserSettingsPropertyAccessor.GetAsync(testClient.DialogContext.Context);
-            actualUserSettings.Should().Be(userSettings);
+            // Check dialog result
+            var actualUserSettings = (UserSettings) testClient.DialogTurnResult.Result;
+            userSettings.Should().Be(actualUserSettings);
         }
     }
 }

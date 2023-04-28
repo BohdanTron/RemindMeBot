@@ -10,11 +10,11 @@ namespace RemindMeBot.Dialogs
     public class MainDialog : ComponentDialog
     {
         private readonly UserSettingsDialog _userSettingsDialog;
-        private readonly StateService _stateService;
+        private readonly IStateService _stateService;
 
         private readonly IStringLocalizer<BotMessages> _localizer;
 
-        public MainDialog(UserSettingsDialog userSettingsDialog, StateService stateService, IStringLocalizer<BotMessages> localizer)
+        public MainDialog(UserSettingsDialog userSettingsDialog, IStateService stateService, IStringLocalizer<BotMessages> localizer)
             : base(nameof(MainDialog))
         {
             _userSettingsDialog = userSettingsDialog;

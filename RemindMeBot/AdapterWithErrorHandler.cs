@@ -1,6 +1,7 @@
 using Microsoft.Bot.Builder.Integration.AspNet.Core;
 using Microsoft.Bot.Builder.TraceExtensions;
 using Microsoft.Bot.Connector.Authentication;
+using RemindMeBot.Middlewares;
 
 namespace RemindMeBot;
 
