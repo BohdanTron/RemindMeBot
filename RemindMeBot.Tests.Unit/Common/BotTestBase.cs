@@ -23,6 +23,15 @@ namespace RemindMeBot.Tests.Unit.Common
             SetupLocalizer();
         }
 
+        protected void ConfigureCulture(string culture)
+        {
+            // Set culture for the current test
+            SetCurrentCulture(culture);
+
+            // Add TestCultureMiddleware so the culture will be the same in dialogs and tests
+            Middlewares.Add(new TestCultureMiddleware(new CultureInfo(culture)));
+        }
+
         protected static void SetCurrentCulture(string culture)
         {
             CultureInfo.CurrentCulture = new CultureInfo(culture);

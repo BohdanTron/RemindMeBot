@@ -10,7 +10,7 @@ using RemindMeBot.Services;
 
 namespace RemindMeBot.Dialogs
 {
-    public class UserSettingsDialog : ComponentDialog
+    public class UserSettingsDialog : CancelDialog
     {
         private readonly IStateService _stateService;
         private readonly ILocationService _locationService;
@@ -22,7 +22,7 @@ namespace RemindMeBot.Dialogs
             IStateService stateService,
             ITranslationService translationService,
             ILocationService locationService,
-            IStringLocalizer<BotMessages> localizer) : base(nameof(UserSettingsDialog))
+            IStringLocalizer<BotMessages> localizer) : base(nameof(UserSettingsDialog), localizer)
         {
             _stateService = stateService;
             _translationService = translationService;

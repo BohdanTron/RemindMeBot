@@ -49,12 +49,17 @@ namespace RemindMeBot.Dialogs
                     await stepContext.Context.SendActivityAsync(MessageFactory.Text("What to remind you about?"), cancellationToken);
                     return await stepContext.EndDialogAsync(cancellationToken: cancellationToken);
 
-                // TODO: Implement other commands here
+                case "/cancel":
+                    var noActiveOperationsMessage = _localizer[ResourceKeys.NoActiveOperations].Value;
+                    await stepContext.Context.SendActivityAsync(
+                        MessageFactory.Text(noActiveOperationsMessage, noActiveOperationsMessage), cancellationToken);
+
+                    return await stepContext.EndDialogAsync(cancellationToken: cancellationToken);
 
                 default:
                     var message = _localizer[ResourceKeys.UnknownCommand];
                     
-                    await stepContext.Context.SendActivityAsync(MessageFactory.Text(message), cancellationToken);
+                    await stepContext.Context.SendActivityAsync(MessageFactory.Text(message, message), cancellationToken);
 
                     return await stepContext.EndDialogAsync(cancellationToken: cancellationToken);
             }

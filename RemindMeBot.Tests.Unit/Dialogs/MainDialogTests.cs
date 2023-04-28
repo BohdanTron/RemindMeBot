@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
@@ -63,7 +62,6 @@ namespace RemindMeBot.Tests.Unit.Dialogs
             _stateService.UserSettingsPropertyAccessor
                 .GetAsync(Arg.Any<ITurnContext>(), Arg.Any<Func<UserSettings>>(), Arg.Any<CancellationToken>())
                 .Returns(new UserSettings { TimeZoneId = "Europe/Kyiv" });
-
             var testClient = new DialogTestClient(Channels.Test, _sut, middlewares: Middlewares);
 
             // Act 
@@ -79,12 +77,7 @@ namespace RemindMeBot.Tests.Unit.Dialogs
         public async Task ShouldSendUnknownCommandMessage_WhenCommandDifferentFromStart(string culture)
         {
             // Arrange
-            // Set culture for the test
-            SetCurrentCulture(culture);
-
-            // Set culture for the dialog
-            Middlewares.Add(new TestCultureMiddleware(new CultureInfo(culture)));
-
+            ConfigureCulture(culture);
             var testClient = new DialogTestClient(Channels.Test, _sut, middlewares: Middlewares);
 
             // Act
@@ -92,6 +85,22 @@ namespace RemindMeBot.Tests.Unit.Dialogs
 
             // Assert
             reply.Text.Should().Be(Localizer[ResourceKeys.UnknownCommand].Value);
+        }
+
+        [Theory]
+        [InlineData("en-US")]
+        [InlineData("uk-UA")]
+        public async Task ShouldBeAbleToCancel_WhenCancelCommand(string culture)
+        {
+            // Arrange
+            ConfigureCulture(culture);
+            var testClient = new DialogTestClient(Channels.Test, _sut, middlewares: Middlewares);
+
+            // Act
+            var reply = await testClient.SendActivityAsync<IMessageActivity>("/cancel");
+
+            // Assert
+            reply.Text.Should().Be(Localizer[ResourceKeys.NoActiveOperations].Value);
         }
     }
 }
