@@ -117,27 +117,48 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="AskForLanguage" xml:space="preserve">
+    <value>Будь ласка виберіть мову:</value>
+  </data>
   <data name="AskForLocation" xml:space="preserve">
     <value>Будь ласка вкажіть ваше місцезнаходження (наприклад Київ, Україна)</value>
+  </data>
+  <data name="AskSettingToChange" xml:space="preserve">
+    <value>Що саме ви бажаєте змінити?</value>
   </data>
   <data name="AskToRetryLocation" xml:space="preserve">
     <value>Мені не вдалося знайти ваше місцезнаходження. Для кращої точності, будь ласка вкажіть назву вашого міста та країни</value>
   </data>
+  <data name="Language" xml:space="preserve">
+    <value>Мова</value>
+  </data>
+  <data name="Location" xml:space="preserve">
+    <value>Місцезнаходження</value>
+  </data>
   <data name="NoActiveOperations" xml:space="preserve">
     <value>Наразі у вас нема активних операцій для скасування</value>
+  </data>
+  <data name="NoUserSettings" xml:space="preserve">
+    <value>Ви ще не встановили свої налаштування. Будь ласка, спочатку використайте команду **/start** для налаштування</value>
   </data>
   <data name="OperationCancelled" xml:space="preserve">
     <value>Поточну операцію скасовано</value>
   </data>
+  <data name="OptionListRetryPrompt" xml:space="preserve">
+    <value>Будь ласка виберіть опцію зі списку:</value>
+  </data>
   <data name="UnknownCommand" xml:space="preserve">
     <value>Невідома команда. Будь ласка введіть коректну команду</value>
   </data>
-  <data name="UserSettingsWereSet" xml:space="preserve">
+  <data name="UserCurrentSettings" xml:space="preserve">
     <value>Ваші поточні налаштування:
 
 - мова - **{0}**
 - місцезнаходження - **{1}**
 - часова пояс - **{2}**
 - місцевий час - **{3}**</value>
+  </data>
+  <data name="UserSettingsHaveBeenChanged" xml:space="preserve">
+    <value>Ваші налаштування були змінені!</value>
   </data>
 </root>

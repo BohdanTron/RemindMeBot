@@ -1,9 +1,9 @@
-﻿using System.Globalization;
-using Microsoft.Bot.Builder;
+﻿using Microsoft.Bot.Builder;
 using Microsoft.Bot.Builder.Dialogs;
 using Microsoft.Bot.Builder.Dialogs.Choices;
 using Microsoft.Bot.Schema;
 using Microsoft.Extensions.Localization;
+using RemindMeBot.Helpers;
 using RemindMeBot.Models;
 using RemindMeBot.Resources;
 using RemindMeBot.Services;
@@ -69,8 +69,8 @@ namespace RemindMeBot.Dialogs
                 ? (string) lang
                 : ((FoundChoice) stepContext.Result).Value;
 
-            var culture = GetCulture(language);
-            SetCurrentCulture(culture);
+            var culture = CultureHelper.GetCulture(language);
+            CultureHelper.SetCurrentCulture(culture);
 
             stepContext.Values["language"] = language;
             stepContext.Values["culture"] = culture;
@@ -78,7 +78,7 @@ namespace RemindMeBot.Dialogs
             var prompt = options is not null && options.TryGetValue("retryMessage", out var message)
                 ? (Activity) message
                 : MessageFactory.Text(_localizer[ResourceKeys.AskForLocation].Value);
-            
+
             return await stepContext.PromptAsync($"{nameof(UserSettingsDialog)}.location",
                 new PromptOptions
                 {
@@ -93,7 +93,7 @@ namespace RemindMeBot.Dialogs
             var language = (string) stepContext.Values["language"];
             var culture = (string) stepContext.Values["culture"];
 
-            SetCurrentCulture(culture);
+            CultureHelper.SetCurrentCulture(culture);
 
             var locationTranslate = culture == "uk-UA"
                 ? await _translationService.Translate(location, "uk-UA", "en-US")
@@ -107,36 +107,22 @@ namespace RemindMeBot.Dialogs
 
                 return await stepContext.ReplaceDialogAsync($"{nameof(UserSettingsDialog)}.retryLocation", options, cancellationToken);
             }
-            
+
             var userSettings = new UserSettings
             {
                 Language = language,
                 Culture = culture,
                 Location = $"{preciseLocation.City}, {preciseLocation.Country}",
-                TimeZoneId = preciseLocation.TimeZoneId
+                TimeZone = preciseLocation.TimeZoneId
             };
             await _stateService.UserSettingsPropertyAccessor.SetAsync(stepContext.Context, userSettings, cancellationToken);
 
             var userLocalTime = userSettings.LocalTime!;
-            var message = _localizer[ResourceKeys.UserSettingsWereSet, language, userSettings.Location, preciseLocation.TimeZoneId, userLocalTime];
+            var message = _localizer[ResourceKeys.UserCurrentSettings, language, userSettings.Location, preciseLocation.TimeZoneId, userLocalTime];
 
             await stepContext.Context.SendActivityAsync(MessageFactory.Text(message), cancellationToken);
 
             return await stepContext.EndDialogAsync(userSettings, cancellationToken);
         }
-
-        private static void SetCurrentCulture(string culture)
-        {
-            CultureInfo.CurrentCulture = new CultureInfo(culture);
-            CultureInfo.CurrentUICulture = new CultureInfo(culture);
-        }
-
-        private static string GetCulture(string language) =>
-            language switch
-            {
-                "English" => "en-US",
-                "Українська" => "uk-UA",
-                _ => "en-US"
-            };
     }
 }

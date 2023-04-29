@@ -45,7 +45,7 @@ namespace RemindMeBot.Tests.Unit.Dialogs
                 Language = language,
                 Culture = culture,
                 Location = $"{city}, {country}",
-                TimeZoneId = timeZone
+                TimeZone = timeZone
             };
 
             var testClient = new DialogTestClient(Channels.Test, _sut, middlewares: Middlewares);
@@ -54,7 +54,7 @@ namespace RemindMeBot.Tests.Unit.Dialogs
             {
                 { "start", "Welcome to the RemindMe chatbot! Please choose your language: (1) English or (2) Українська"},
                 { language, Localizer[ResourceKeys.AskForLocation].Value},
-                { location, Localizer[ResourceKeys.UserSettingsWereSet, language, location, timeZone, userSettings.LocalTime!]}
+                { location, Localizer[ResourceKeys.UserCurrentSettings, language, location, timeZone, userSettings.LocalTime!]}
             };
 
             // Act / Assert
@@ -83,7 +83,7 @@ namespace RemindMeBot.Tests.Unit.Dialogs
                 Language = language,
                 Culture = culture,
                 Location = location,
-                TimeZoneId = timeZone
+                TimeZone = timeZone
             };
 
             var testClient = new DialogTestClient(Channels.Test, _sut, middlewares: Middlewares);
@@ -114,7 +114,7 @@ namespace RemindMeBot.Tests.Unit.Dialogs
             // Step 5 (Valid location)
             _locationService.GetLocation(Arg.Any<string>()).Returns(new Location(city, country, timeZone));
             reply = await testClient.SendActivityAsync<IMessageActivity>(location);
-            var expected = Localizer[ResourceKeys.UserSettingsWereSet, language, location, timeZone, userSettings.LocalTime!];
+            var expected = Localizer[ResourceKeys.UserCurrentSettings, language, location, timeZone, userSettings.LocalTime!];
             reply.Text.Should().Be(expected);
             testClient.DialogTurnResult.Status.Should().Be(DialogTurnStatus.Complete);
 

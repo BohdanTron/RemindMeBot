@@ -45,6 +45,7 @@ builder.Services.AddSingleton<IStateService, StateService>();
 
 // Add the dialogs with the main bot to the container
 builder.Services.AddSingleton<UserSettingsDialog>();
+builder.Services.AddSingleton<ChangeUserSettingsDialog>();
 builder.Services.AddSingleton<MainDialog>();
 builder.Services.AddTransient<IBot, MainBot<MainDialog>>();
 

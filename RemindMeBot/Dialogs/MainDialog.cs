@@ -9,19 +9,26 @@ namespace RemindMeBot.Dialogs
 {
     public class MainDialog : ComponentDialog
     {
-        private readonly UserSettingsDialog _userSettingsDialog;
         private readonly IStateService _stateService;
-
         private readonly IStringLocalizer<BotMessages> _localizer;
 
-        public MainDialog(UserSettingsDialog userSettingsDialog, IStateService stateService, IStringLocalizer<BotMessages> localizer)
-            : base(nameof(MainDialog))
+        private readonly UserSettingsDialog _userSettingsDialog;
+        private readonly ChangeUserSettingsDialog _changeUserSettingsDialog;
+
+        public MainDialog(
+            IStateService stateService,
+            IStringLocalizer<BotMessages> localizer,
+            UserSettingsDialog userSettingsDialog,
+            ChangeUserSettingsDialog changeUserSettingsDialog) : base(nameof(MainDialog))
         {
-            _userSettingsDialog = userSettingsDialog;
             _stateService = stateService;
             _localizer = localizer;
 
+            _userSettingsDialog = userSettingsDialog;
+            _changeUserSettingsDialog = changeUserSettingsDialog;
+
             AddDialog(_userSettingsDialog);
+            AddDialog(_changeUserSettingsDialog);
             AddDialog(new WaterfallDialog($"{nameof(MainDialog)}.{nameof(WaterfallDialog)}",
                 new WaterfallStep[]
                 {
@@ -33,7 +40,7 @@ namespace RemindMeBot.Dialogs
 
         private async Task<DialogTurnResult> ProcessInputStep(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
-            var input = stepContext.Context.Activity.Text;
+            var input = stepContext.Context.Activity.Text.ToLowerInvariant();
 
             switch (input)
             {
@@ -49,17 +56,20 @@ namespace RemindMeBot.Dialogs
                     await stepContext.Context.SendActivityAsync(MessageFactory.Text("What to remind you about?"), cancellationToken);
                     return await stepContext.EndDialogAsync(cancellationToken: cancellationToken);
 
+                case "/my-settings":
+                    return await stepContext.BeginDialogAsync(_changeUserSettingsDialog.Id, cancellationToken: cancellationToken);
+
                 case "/cancel":
-                    var noActiveOperationsMessage = _localizer[ResourceKeys.NoActiveOperations].Value;
+                    var noActiveOperations = _localizer[ResourceKeys.NoActiveOperations];
                     await stepContext.Context.SendActivityAsync(
-                        MessageFactory.Text(noActiveOperationsMessage, noActiveOperationsMessage), cancellationToken);
+                        MessageFactory.Text(noActiveOperations, noActiveOperations), cancellationToken);
 
                     return await stepContext.EndDialogAsync(cancellationToken: cancellationToken);
 
                 default:
-                    var message = _localizer[ResourceKeys.UnknownCommand];
-                    
-                    await stepContext.Context.SendActivityAsync(MessageFactory.Text(message, message), cancellationToken);
+                    var unknownCommand = _localizer[ResourceKeys.UnknownCommand];
+
+                    await stepContext.Context.SendActivityAsync(MessageFactory.Text(unknownCommand, unknownCommand), cancellationToken);
 
                     return await stepContext.EndDialogAsync(cancellationToken: cancellationToken);
             }

@@ -61,7 +61,7 @@ namespace RemindMeBot.Tests.Unit.Dialogs
             // Arrange
             _stateService.UserSettingsPropertyAccessor
                 .GetAsync(Arg.Any<ITurnContext>(), Arg.Any<Func<UserSettings>>(), Arg.Any<CancellationToken>())
-                .Returns(new UserSettings { TimeZoneId = "Europe/Kyiv" });
+                .Returns(new UserSettings { TimeZone = "Europe/Kyiv" });
             var testClient = new DialogTestClient(Channels.Test, _sut, middlewares: Middlewares);
 
             // Act 
