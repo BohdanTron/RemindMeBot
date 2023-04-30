@@ -249,6 +249,5 @@ namespace RemindMeBot.Tests.Unit.Dialogs
                 TimeZone = newTimeZone
             });
         }
-
     }
 }
