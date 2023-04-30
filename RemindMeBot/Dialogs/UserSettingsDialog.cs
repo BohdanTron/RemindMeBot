@@ -52,12 +52,15 @@ namespace RemindMeBot.Dialogs
 
         private static Task<DialogTurnResult> AskForLanguageStep(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
+            const string welcomeMsg = "Welcome to the RemindMe chatbot! Please choose your language:";
+            const string retryPrompt = "Please choose an option from the list:";
+
             return stepContext.PromptAsync($"{nameof(UserSettingsDialog)}.language",
                 new PromptOptions
                 {
-                    Prompt = MessageFactory.Text("Welcome to the RemindMe chatbot! Please choose your language:"),
+                    Prompt = MessageFactory.Text(welcomeMsg, welcomeMsg),
                     Choices = ChoiceFactory.ToChoices(new List<string> { "English", "Українська" }),
-                    RetryPrompt = MessageFactory.Text("Please choose an option from the list:")
+                    RetryPrompt = MessageFactory.Text(retryPrompt, retryPrompt)
                 }, cancellationToken);
         }
 
@@ -75,15 +78,17 @@ namespace RemindMeBot.Dialogs
             stepContext.Values["language"] = language;
             stepContext.Values["culture"] = culture;
 
+            var askForLocationMsg = _localizer[ResourceKeys.AskForLocation];
             var prompt = options is not null && options.TryGetValue("retryMessage", out var message)
                 ? (Activity) message
-                : MessageFactory.Text(_localizer[ResourceKeys.AskForLocation].Value);
+                : MessageFactory.Text(askForLocationMsg, askForLocationMsg);
 
+            var retryPrompt = _localizer[ResourceKeys.AskToRetryLocation];
             return await stepContext.PromptAsync($"{nameof(UserSettingsDialog)}.location",
                 new PromptOptions
                 {
                     Prompt = prompt,
-                    RetryPrompt = MessageFactory.Text(_localizer[ResourceKeys.AskToRetryLocation].Value)
+                    RetryPrompt = MessageFactory.Text(retryPrompt, retryPrompt)
                 }, cancellationToken);
         }
 
@@ -102,8 +107,12 @@ namespace RemindMeBot.Dialogs
             var preciseLocation = await _locationService.GetLocation(locationTranslate);
             if (preciseLocation is null)
             {
-                var retryMessage = MessageFactory.Text(_localizer[ResourceKeys.AskToRetryLocation].Value);
-                var options = new Dictionary<string, object> { { "language", language }, { "retryMessage", retryMessage } };
+                var retryMessage = _localizer[ResourceKeys.AskToRetryLocation];
+                var options = new Dictionary<string, object>
+                {
+                    { "language", language },
+                    { "retryMessage", MessageFactory.Text(retryMessage, retryMessage) }
+                };
 
                 return await stepContext.ReplaceDialogAsync($"{nameof(UserSettingsDialog)}.retryLocation", options, cancellationToken);
             }
@@ -116,11 +125,10 @@ namespace RemindMeBot.Dialogs
                 TimeZone = preciseLocation.TimeZoneId
             };
             await _stateService.UserSettingsPropertyAccessor.SetAsync(stepContext.Context, userSettings, cancellationToken);
+            
+            var message = _localizer[ResourceKeys.UserCurrentSettings, language, userSettings.Location, preciseLocation.TimeZoneId, userSettings.LocalTime!];
 
-            var userLocalTime = userSettings.LocalTime!;
-            var message = _localizer[ResourceKeys.UserCurrentSettings, language, userSettings.Location, preciseLocation.TimeZoneId, userLocalTime];
-
-            await stepContext.Context.SendActivityAsync(MessageFactory.Text(message), cancellationToken);
+            await stepContext.Context.SendActivityAsync(MessageFactory.Text(message, message), cancellationToken);
 
             return await stepContext.EndDialogAsync(userSettings, cancellationToken);
         }

@@ -32,7 +32,7 @@ namespace RemindMeBot.Dialogs
 
             if (input != "/cancel") return null;
 
-            var cancelMessage = _localizer[ResourceKeys.OperationCancelled].Value;
+            var cancelMessage = _localizer[ResourceKeys.OperationCancelled];
             await innerDc.Context.SendActivityAsync(MessageFactory.Text(cancelMessage, cancelMessage), cancellationToken);
 
             return await innerDc.CancelAllDialogsAsync(cancellationToken);
