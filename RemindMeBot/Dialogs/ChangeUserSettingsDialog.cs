@@ -128,7 +128,7 @@ namespace RemindMeBot.Dialogs
                     }, cancellationToken);
             }
 
-            return stepContext.NextAsync(null, cancellationToken);
+            return stepContext.EndDialogAsync(null, cancellationToken);
         }
 
         private async Task<DialogTurnResult> SaveChangedSettingsStep(WaterfallStepContext stepContext, CancellationToken cancellationToken)

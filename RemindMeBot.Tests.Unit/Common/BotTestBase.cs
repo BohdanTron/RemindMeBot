@@ -51,7 +51,14 @@ namespace RemindMeBot.Tests.Unit.Common
                 var key = (string) info[0];
                 var value = resourceManager.GetString(key, CultureInfo.CurrentCulture);
 
-                return value is null ? null : new LocalizedString(key, value);
+                if (value is null) return null;
+
+                if (info.Args().Length > 1 && info[1] is object[] args)
+                {
+                    value = string.Format(value, args);
+                }
+
+                return new LocalizedString(key, value);
             }
         }
 

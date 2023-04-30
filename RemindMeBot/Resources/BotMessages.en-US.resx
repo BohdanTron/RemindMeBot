@@ -129,6 +129,12 @@
   <data name="AskToRetryLocation" xml:space="preserve">
     <value>I couldn't find your location. For better accuracy, please provide both your city and country names</value>
   </data>
+  <data name="Language" xml:space="preserve">
+    <value>Language</value>
+  </data>
+  <data name="Location" xml:space="preserve">
+    <value>Location</value>
+  </data>
   <data name="NoActiveOperations" xml:space="preserve">
     <value>There are no active operations to cancel</value>
   </data>

@@ -31,7 +31,7 @@ namespace RemindMeBot.Tests.Unit.Dialogs
         [Theory]
         [InlineData("English", "en-US", "London", "United Kingdom", "Europe/London")]
         [InlineData("Українська", "uk-UA", "Київ", "Україна", "Europe/Kyiv")]
-        public async Task ShouldSetUserSettings_WhenHappyPath(string language, string culture, string city, string country, string timeZone)
+        public async Task ShouldSetUserSettings_WhenValidInput(string language, string culture, string city, string country, string timeZone)
         {
             // Arrange
             SetCurrentCulture(culture);
@@ -72,7 +72,7 @@ namespace RemindMeBot.Tests.Unit.Dialogs
         [Theory]
         [InlineData("English", "en-US", "London", "United Kingdom", "Europe/London")]
         [InlineData("Українська", "uk-UA", "Київ", "Україна", "Europe/Kyiv")]
-        public async Task ShouldSetUserSettings_WhenInvalidInputFlow(string language, string culture, string city, string country, string timeZone)
+        public async Task ShouldSetUserSettings_WhenInvalidInput(string language, string culture, string city, string country, string timeZone)
         {
             // Arrange
             SetCurrentCulture(culture);

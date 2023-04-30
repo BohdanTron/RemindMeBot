@@ -24,14 +24,15 @@ namespace RemindMeBot.Tests.Unit.Dialogs
 
         private readonly IStateService _stateService = Substitute.For<IStateService>();
         private readonly UserSettingsDialog _userSettingsDialog = Substitute.For<UserSettingsDialog>(null, null, null, null);
+        private readonly ChangeUserSettingsDialog _changeUserSettingsDialog = Substitute.For<ChangeUserSettingsDialog>(null, null, null, null);
 
         public MainDialogTests(ITestOutputHelper output) : base(output)
         {
-            _sut = new MainDialog(_userSettingsDialog, _stateService, Localizer);
+            _sut = new MainDialog(_stateService, _userSettingsDialog, _changeUserSettingsDialog, Localizer);
         }
 
         [Fact]
-        public async Task ShouldStartUserSettingsDialog_WhenStartCommandAndNoUserSettingsSet()
+        public async Task ShouldBeginUserSettingsDialog_WhenStartCommandAndNoUserSettingsSet()
         {
             // Arrange
             _userSettingsDialog
@@ -56,7 +57,7 @@ namespace RemindMeBot.Tests.Unit.Dialogs
         }
 
         [Fact]
-        public async Task ShouldNotStartUserSettingsDialog_WhenStartCommandAndUserSettingsAlreadySet()
+        public async Task ShouldNotBeginUserSettingsDialog_WhenStartCommandAndUserSettingsAlreadySet()
         {
             // Arrange
             _stateService.UserSettingsPropertyAccessor
@@ -74,7 +75,7 @@ namespace RemindMeBot.Tests.Unit.Dialogs
         [Theory]
         [InlineData("en-US")]
         [InlineData("uk-UA")]
-        public async Task ShouldSendUnknownCommandMessage_WhenCommandDifferentFromStart(string culture)
+        public async Task ShouldReplyWithUnknownCommandMessage_WhenUnknownCommand(string culture)
         {
             // Arrange
             ConfigureCulture(culture);
@@ -90,7 +91,7 @@ namespace RemindMeBot.Tests.Unit.Dialogs
         [Theory]
         [InlineData("en-US")]
         [InlineData("uk-UA")]
-        public async Task ShouldBeAbleToCancel_WhenCancelCommand(string culture)
+        public async Task ShouldReplyWithNoActiveOperationsMessage_WhenCancelCommand(string culture)
         {
             // Arrange
             ConfigureCulture(culture);
@@ -101,6 +102,32 @@ namespace RemindMeBot.Tests.Unit.Dialogs
 
             // Assert
             reply.Text.Should().Be(Localizer[ResourceKeys.NoActiveOperations].Value);
+        }
+
+        [Fact]
+        public async Task ShouldBeginChangeUserSettingsDialog_WhenMySettingsCommand()
+        {
+            // Arrange
+            _changeUserSettingsDialog
+                .BeginDialogAsync(Arg.Any<DialogContext>(), Arg.Any<object>(), Arg.Any<CancellationToken>())
+                .Returns(async callInfo =>
+                {
+                    var dialogContext = callInfo.Arg<DialogContext>();
+                    var cancellationToken = callInfo.Arg<CancellationToken>();
+
+                    await dialogContext.Context.SendActivityAsync("Your current settings:", cancellationToken: cancellationToken);
+
+                    return await dialogContext.EndDialogAsync(cancellationToken: cancellationToken);
+                });
+
+
+            var testClient = new DialogTestClient(Channels.Test, _sut, middlewares: Middlewares);
+
+            // Act
+            var reply = await testClient.SendActivityAsync<IMessageActivity>("/my-settings");
+
+            // Assert
+            reply.Text.Should().Be("Your current settings:");
         }
     }
 }
