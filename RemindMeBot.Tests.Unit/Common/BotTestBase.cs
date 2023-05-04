@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Resources;
 using Microsoft.Bot.Builder;
@@ -6,6 +7,7 @@ using Microsoft.Bot.Builder.Testing.XUnit;
 using Microsoft.Extensions.Localization;
 using NSubstitute;
 using NSubstitute.Core;
+using RemindMeBot.Helpers;
 using RemindMeBot.Resources;
 using Xunit.Abstractions;
 
@@ -23,13 +25,13 @@ namespace RemindMeBot.Tests.Unit.Common
             SetupLocalizer();
         }
 
-        protected void ConfigureCulture(string culture)
+        protected void ConfigureCulture(string culture, string? localTimeZone = null, DateTime? localTimeStamp = null)
         {
             // Set culture for the current test
             SetCurrentCulture(culture);
 
             // Add TestCultureMiddleware so the culture will be the same in dialogs and tests
-            Middlewares.Add(new TestCultureMiddleware(new CultureInfo(culture)));
+            Middlewares.Add(new TestCultureMiddleware(new CultureInfo(culture), localTimeZone, localTimeStamp));
         }
 
         protected static void SetCurrentCulture(string culture)

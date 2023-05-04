@@ -13,6 +13,7 @@ namespace RemindMeBot.Dialogs
 
         private readonly UserSettingsDialog _userSettingsDialog;
         private readonly ChangeUserSettingsDialog _changeUserSettingsDialog;
+        private readonly AddReminderDialog _addReminderDialog;
 
         private readonly IStringLocalizer<BotMessages> _localizer;
 
@@ -20,16 +21,21 @@ namespace RemindMeBot.Dialogs
             IStateService stateService,
             UserSettingsDialog userSettingsDialog,
             ChangeUserSettingsDialog changeUserSettingsDialog,
+            AddReminderDialog addReminderDialog,
             IStringLocalizer<BotMessages> localizer) : base(nameof(MainDialog))
         {
             _stateService = stateService;
-            _localizer = localizer;
-
+            
+            _addReminderDialog = addReminderDialog;
             _userSettingsDialog = userSettingsDialog;
             _changeUserSettingsDialog = changeUserSettingsDialog;
 
+            _localizer = localizer;
+
             AddDialog(_userSettingsDialog);
             AddDialog(_changeUserSettingsDialog);
+            AddDialog(_addReminderDialog);
+
             AddDialog(new WaterfallDialog($"{nameof(MainDialog)}.{nameof(WaterfallDialog)}",
                 new WaterfallStep[]
                 {
@@ -49,7 +55,7 @@ namespace RemindMeBot.Dialogs
                     var userSettings = await _stateService.UserSettingsPropertyAccessor.GetAsync(stepContext.Context,
                         () => new UserSettings(), cancellationToken);
 
-                    if (userSettings?.LocalTime is null)
+                    if (userSettings?.TimeZone is null)
                     {
                         return await stepContext.BeginDialogAsync(_userSettingsDialog.Id, cancellationToken: cancellationToken);
                     }
@@ -59,6 +65,9 @@ namespace RemindMeBot.Dialogs
 
                 case "/my-settings":
                     return await stepContext.BeginDialogAsync(_changeUserSettingsDialog.Id, cancellationToken: cancellationToken);
+
+                case "/add-reminder":
+                    return await stepContext.BeginDialogAsync(_addReminderDialog.Id, cancellationToken: cancellationToken);
 
                 case "/cancel":
                     var noActiveOperations = _localizer[ResourceKeys.NoActiveOperations];

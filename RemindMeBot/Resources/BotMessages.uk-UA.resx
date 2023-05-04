@@ -123,11 +123,20 @@
   <data name="AskForLocation" xml:space="preserve">
     <value>Будь ласка вкажіть ваше місцезнаходження (наприклад Київ, Україна)</value>
   </data>
+  <data name="AskForReminderDate" xml:space="preserve">
+    <value>Коли я маю нагадати про це? (Будь ласка введіть дату та час)</value>
+  </data>
+  <data name="AskForReminderText" xml:space="preserve">
+    <value>Будь ласка введіть текст для нагадування</value>
+  </data>
   <data name="AskSettingToChange" xml:space="preserve">
     <value>Що саме ви бажаєте змінити?</value>
   </data>
   <data name="AskToRetryLocation" xml:space="preserve">
     <value>Мені не вдалося знайти ваше місцезнаходження. Для кращої точності, будь ласка вкажіть назву вашого міста та країни</value>
+  </data>
+  <data name="DateNotRecognized" xml:space="preserve">
+    <value>Мені не вдалось розпізнати введену дату та час або вони не є майбутніми. Будь ласка, спробуйте ще раз, використовуючи інший формат або фразу, наприклад "завтра о 15:00", "наступної середи" або "через тиждень".</value>
   </data>
   <data name="Language" xml:space="preserve">
     <value>Мова</value>
@@ -147,6 +156,9 @@
   <data name="OptionListRetryPrompt" xml:space="preserve">
     <value>Будь ласка виберіть опцію зі списку:</value>
   </data>
+  <data name="ReminderAdded" xml:space="preserve">
+    <value>Нагадування додано: **\"{0}\"** на **{1}**</value>
+  </data>
   <data name="UnknownCommand" xml:space="preserve">
     <value>Невідома команда. Будь ласка введіть коректну команду</value>
   </data>
@@ -160,5 +172,32 @@
   </data>
   <data name="UserSettingsHaveBeenChanged" xml:space="preserve">
     <value>Ваші налаштування були змінені!</value>
+  </data>
+  <data name="AskWhetherToRepeatReminder" xml:space="preserve">
+    <value>Чи бажаєте повторювати нагадування? (так/ні)</value>
+  </data>
+  <data name="Yes" xml:space="preserve">
+    <value>так</value>
+  </data>
+  <data name="No" xml:space="preserve">
+    <value>ні</value>
+  </data>
+  <data name="AskForRepeatInterval" xml:space="preserve">
+    <value>Як часто повторювати? (щодня/щотижня/щомісяця/щорічно)</value>
+  </data>
+  <data name="Daily" xml:space="preserve">
+    <value>щодня</value>
+  </data>
+  <data name="Weekly" xml:space="preserve">
+    <value>щотижня</value>
+  </data>
+  <data name="Monthly" xml:space="preserve">
+    <value>щомісяця</value>
+  </data>
+  <data name="Yearly" xml:space="preserve">
+    <value>щорічно</value>
+  </data>
+  <data name="RepeatedReminderAdded" xml:space="preserve">
+    <value>Нагадування додано: **\"{0}\"** на **{1}**, повторюється **{2}**</value>
   </data>
 </root>

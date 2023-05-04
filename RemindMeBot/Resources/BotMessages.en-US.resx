@@ -123,11 +123,20 @@
   <data name="AskForLocation" xml:space="preserve">
     <value>Please enter your city and country (e.g London, United Kingdom)</value>
   </data>
+  <data name="AskForReminderDate" xml:space="preserve">
+    <value>When should I remind you? (Please provide the date and time)</value>
+  </data>
+  <data name="AskForReminderText" xml:space="preserve">
+    <value>Please enter the title of the reminder</value>
+  </data>
   <data name="AskSettingToChange" xml:space="preserve">
     <value>Which setting would you like to change?</value>
   </data>
   <data name="AskToRetryLocation" xml:space="preserve">
     <value>I couldn't find your location. For better accuracy, please provide both your city and country names</value>
+  </data>
+  <data name="DateNotRecognized" xml:space="preserve">
+    <value>I couldn't recognize the date and time you entered, or it's not in the future. Please try again using a different format or phrase like "tomorrow at 3 PM", "next Wednesday", or "in a week".</value>
   </data>
   <data name="Language" xml:space="preserve">
     <value>Language</value>
@@ -147,6 +156,9 @@
   <data name="OptionListRetryPrompt" xml:space="preserve">
     <value>Please choose an option from the list:</value>
   </data>
+  <data name="RepeatedReminderAdded" xml:space="preserve">
+    <value>Reminder added: **\"{0}\"** on **{1}**, repeating **{2}**</value>
+  </data>
   <data name="UnknownCommand" xml:space="preserve">
     <value>Unknown command. Please enter a valid command</value>
   </data>
@@ -160,5 +172,32 @@
   </data>
   <data name="UserSettingsHaveBeenChanged" xml:space="preserve">
     <value>Your settings have been changed!</value>
+  </data>
+  <data name="AskWhetherToRepeatReminder" xml:space="preserve">
+    <value>Do you want this reminder to repeat? (yes/no)</value>
+  </data>
+  <data name="Yes" xml:space="preserve">
+    <value>yes</value>
+  </data>
+  <data name="No" xml:space="preserve">
+    <value>no</value>
+  </data>
+  <data name="AskForRepeatInterval" xml:space="preserve">
+    <value>How often should it repeat? (daily/weekly/monthly/yearly)</value>
+  </data>
+  <data name="Daily" xml:space="preserve">
+    <value>daily</value>
+  </data>
+  <data name="Weekly" xml:space="preserve">
+    <value>weekly</value>
+  </data>
+  <data name="Monthly" xml:space="preserve">
+    <value>monthly</value>
+  </data>
+  <data name="Yearly" xml:space="preserve">
+    <value>yearly</value>
+  </data>
+  <data name="ReminderAdded" xml:space="preserve">
+    <value>Reminder added: **\"{0}\"** on **{1}**</value>
   </data>
 </root>

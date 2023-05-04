@@ -22,7 +22,7 @@ namespace RemindMeBot.Models
             return localTime;
         }
 
-        public void Deconstruct(out string? location, out string? language, out string? timeZone, out string? localTime) => 
+        public void Deconstruct(out string? location, out string? language, out string? timeZone, out string? localTime) =>
             (location, language, timeZone, localTime) = (Location, Language, TimeZone, LocalTime);
     }
 }

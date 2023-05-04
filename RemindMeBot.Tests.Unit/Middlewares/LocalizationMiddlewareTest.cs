@@ -16,12 +16,14 @@ namespace RemindMeBot.Tests.Unit.Middlewares
     public class LocalizationMiddlewareTest
     {
         private readonly IStateService _stateService = Substitute.For<IStateService>();
+        private readonly IDateTimeConverter _dateTimeConverter = Substitute.For<IDateTimeConverter>();
+
         private readonly TestAdapter _testAdapter;
 
         public LocalizationMiddlewareTest()
         {
             _testAdapter = new TestAdapter()
-                .Use(new LocalizationMiddleware(_stateService));
+                .Use(new LocalizationMiddleware(_stateService, _dateTimeConverter));
         }
 
         [Fact]

@@ -15,5 +15,18 @@
         public const string AskForLanguage = nameof(AskForLanguage);
         public const string UserSettingsHaveBeenChanged = nameof(UserSettingsHaveBeenChanged);
         public const string NoUserSettings = nameof(NoUserSettings);
+        public const string AskForReminderText = nameof(AskForReminderText);
+        public const string AskForReminderDate = nameof(AskForReminderDate);
+        public const string ReminderAdded = nameof(ReminderAdded);
+        public const string RepeatedReminderAdded = nameof(RepeatedReminderAdded);
+        public const string DateNotRecognized = nameof(DateNotRecognized);
+        public const string AskWhetherToRepeatReminder = nameof(AskWhetherToRepeatReminder);
+        public const string Yes = nameof(Yes);
+        public const string No = nameof(No);
+        public const string AskForRepeatInterval = nameof(AskForRepeatInterval);
+        public const string Daily = nameof(Daily);
+        public const string Weekly = nameof(Weekly);
+        public const string Monthly = nameof(Monthly);
+        public const string Yearly = nameof(Yearly);
     }
 }
