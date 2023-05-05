@@ -200,4 +200,7 @@
   <data name="RepeatedReminderAdded" xml:space="preserve">
     <value>Нагадування додано: **\"{0}\"** на **{1}**, повторюється **{2}**</value>
   </data>
+  <data name="UnexpectedError" xml:space="preserve">
+    <value>Ой, щось пішло не так. Будь ласка, спробуйте знову пізніше.</value>
+  </data>
 </root>

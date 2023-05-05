@@ -200,4 +200,7 @@
   <data name="ReminderAdded" xml:space="preserve">
     <value>Reminder added: **\"{0}\"** on **{1}**</value>
   </data>
+  <data name="UnexpectedError" xml:space="preserve">
+    <value>Oops, something went wrong. Please try again later.</value>
+  </data>
 </root>

@@ -13,7 +13,7 @@ namespace RemindMeBot.Dialogs
         public CancelDialog(string id, IStringLocalizer<BotMessages> localizer) : base(id) =>
             _localizer = localizer;
 
-        protected override async Task<DialogTurnResult> OnContinueDialogAsync(DialogContext innerDc, CancellationToken cancellationToken = new CancellationToken())
+        protected override async Task<DialogTurnResult> OnContinueDialogAsync(DialogContext innerDc, CancellationToken cancellationToken = new())
         {
             var canceledResult = await TryCancel(innerDc, cancellationToken);
             if (canceledResult is not null)

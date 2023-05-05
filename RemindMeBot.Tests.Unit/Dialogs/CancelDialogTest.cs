@@ -30,7 +30,7 @@ namespace RemindMeBot.Tests.Unit.Dialogs
         public async Task ShouldBeAbleToCancel(string culture)
         {
             // Arrange
-            ConfigureCulture(culture);
+            ConfigureLocalization(culture);
             var testClient = new DialogTestClient(Channels.Test, _sut, middlewares: Middlewares);
 
             // Act / Assert
@@ -41,6 +41,21 @@ namespace RemindMeBot.Tests.Unit.Dialogs
             reply = await testClient.SendActivityAsync<IMessageActivity>("/cancel");
             reply.Text.Should().Be(Localizer[ResourceKeys.OperationCancelled]);
             testClient.DialogTurnResult.Status.Should().Be(DialogTurnStatus.Complete);
+        }
+
+        [Fact]
+        public async Task ShouldNotCancel_WhenItIsNotMessage()
+        {
+            // Arrange
+            var testClient = new DialogTestClient(Channels.Test, _sut, middlewares: Middlewares);
+
+            // Act / Assert
+            var reply = await testClient.SendActivityAsync<IMessageActivity>(new Activity { Type = ActionTypes.ShowImage, Value = "/cancel"});
+            reply.Text.Should().Be("Hi there");
+            testClient.DialogTurnResult.Status.Should().Be(DialogTurnStatus.Waiting);
+
+            reply = await testClient.SendActivityAsync<IMessageActivity>(new Activity { Type = ActionTypes.ShowImage, Value = "/cancel" });
+            reply.Should().BeNull();
         }
     }
 

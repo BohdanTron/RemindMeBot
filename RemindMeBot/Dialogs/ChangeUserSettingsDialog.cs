@@ -158,11 +158,11 @@ namespace RemindMeBot.Dialogs
             if (settingToChange == location)
             {
                 var locationInput = (string) stepContext.Result;
-                var locationTranslate = userSettings.Culture == "uk-UA"
-                    ? await _translationService.Translate(locationInput, "uk-UA", "en-US")
+                var translatedLocation = userSettings.Culture == "uk-UA"
+                    ? await _translationService.Translate(locationInput, from: "uk-UA", to: "en-US")
                     : locationInput;
 
-                var preciseLocation = await _locationService.GetLocation(locationTranslate);
+                var preciseLocation = await _locationService.GetLocation(translatedLocation);
 
                 if (preciseLocation is null)
                 {
@@ -204,12 +204,16 @@ namespace RemindMeBot.Dialogs
 
         private async Task DisplayCurrentUserSettings(WaterfallStepContext stepContext, UserSettings userSettings, CancellationToken cancellationToken)
         {
-            // Existing of user settings must be checked in the first step of the dialog
             var (location, language, timeZone) = userSettings;
-            
-            var localTime = _clock.GetLocalDateTime(timeZone!).ToString("t", CultureInfo.CurrentCulture);
 
-            var message = _localizer[ResourceKeys.UserCurrentSettings, language!, location!, timeZone!, localTime];
+            if (location is null || language is null || timeZone is null)
+            {
+                throw new ArgumentNullException(nameof(userSettings));
+            }
+            
+            var localTime = _clock.GetLocalDateTime(timeZone).ToString("t", CultureInfo.CurrentCulture);
+
+            var message = _localizer[ResourceKeys.UserCurrentSettings, language, location, timeZone, localTime];
 
             await stepContext.Context.SendActivityAsync(MessageFactory.Text(message, message), cancellationToken);
         }

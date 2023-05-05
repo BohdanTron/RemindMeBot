@@ -28,5 +28,6 @@
         public const string Weekly = nameof(Weekly);
         public const string Monthly = nameof(Monthly);
         public const string Yearly = nameof(Yearly);
+        public const string UnexpectedError = nameof(UnexpectedError);
     }
 }

@@ -38,7 +38,7 @@ namespace RemindMeBot.Tests.Unit.Dialogs
         public async Task ShouldEndDialog_WhenNoUserSettingsExist(string culture)
         {
             // Arrange
-            ConfigureCulture(culture);
+            ConfigureLocalization(culture);
 
             _stateService.UserSettingsPropertyAccessor
                 .GetAsync(Arg.Any<ITurnContext>(), Arg.Any<Func<UserSettings>>(), Arg.Any<CancellationToken>())
@@ -63,7 +63,7 @@ namespace RemindMeBot.Tests.Unit.Dialogs
             const string newUserCulture = "uk-UA";
             const string newUserLanguage = "Українська";
 
-            ConfigureCulture(currentUserCulture);
+            ConfigureLocalization(currentUserCulture);
 
             var userSettings = new UserSettings
             {
@@ -128,7 +128,7 @@ namespace RemindMeBot.Tests.Unit.Dialogs
         public async Task ShouldChangeUserLocation_WithoutChangingCulture_WhenUserSettingsExist(string culture, string language)
         {
             // Arrange
-            ConfigureCulture(culture);
+            ConfigureLocalization(culture);
             var userSettings = new UserSettings
             {
                 Language = language,
@@ -198,7 +198,7 @@ namespace RemindMeBot.Tests.Unit.Dialogs
         public async Task ShouldHandleInvalidLocationAndAskAgain_WhenUserSettingsExist(string culture, string language)
         {
             // Arrange
-            ConfigureCulture(culture);
+            ConfigureLocalization(culture);
 
             var userSettings = new UserSettings
             {

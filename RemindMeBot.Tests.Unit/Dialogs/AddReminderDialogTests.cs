@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
@@ -63,7 +64,7 @@ namespace RemindMeBot.Tests.Unit.Dialogs
                 TimeZone = timeZone
             };
 
-            ConfigureCulture(culture, userSettings.TimeZone);
+            ConfigureLocalization(culture, userSettings.TimeZone);
 
             _stateService.UserSettingsPropertyAccessor
                 .GetAsync(Arg.Any<ITurnContext>(), Arg.Any<Func<UserSettings>>(), Arg.Any<CancellationToken>())
@@ -131,7 +132,7 @@ namespace RemindMeBot.Tests.Unit.Dialogs
                 TimeZone = timeZone
             };
 
-            ConfigureCulture(culture, userSettings.TimeZone);
+            ConfigureLocalization(culture, userSettings.TimeZone);
 
             _stateService.UserSettingsPropertyAccessor
                 .GetAsync(Arg.Any<ITurnContext>(), Arg.Any<Func<UserSettings>>(), Arg.Any<CancellationToken>())
@@ -168,75 +169,13 @@ namespace RemindMeBot.Tests.Unit.Dialogs
         }
 
         [Theory]
-
-        // Relative time inputs
-        [InlineData("in an hour", 0, 1)]
-        [InlineData("in 2 hours", 0, 2)]
-        [InlineData("2 hours from now", 0, 2)]
-        [InlineData("in 30 minutes", 0, 0, 30)]
-        [InlineData("in 90 minutes", 0, 1, 30)]
-
-        // Specific time inputs
-        [InlineData("at 2 AM", 0, 2)]
-        [InlineData("2pm", 0, 14)]
-
-        // Absolute date and time inputs with different formats
-        [InlineData("5/6/2023 10:00 AM", 0, 10)]
-        [InlineData("2023-05-08 20:00", 2, 20, 0)]
-        [InlineData("2023/05/08 20:00", 2, 20, 0)]
-
-        // Relative day inputs
-        [InlineData("tomorrow", 1, 0)]
-        [InlineData("in 1 day", 1, 0)]
-        [InlineData("in 2 days", 2, 0)]
-        [InlineData("in 3 days", 3, 0)]
-
-        // Relative day inputs with specific time
-        [InlineData("tomorrow at 2 PM", 1, 14)]
-        [InlineData("in 2 days at 3:30 PM", 2, 15, 30)]
-
-        // Days of the week
-        [InlineData("on Monday", 2, 0)]
-        [InlineData("Monday at 5:30 PM", 2, 17, 30)]
-
-        // Week-related inputs
-        [InlineData("in a week", 7, 0)]
-        [InlineData("next Saturday", 7, 0)]
-        [InlineData("next Saturday at 1:15 PM", 7, 13, 15)]
-        [InlineData("next Sunday at 07:00", 8, 7, 0)]
-        [InlineData("2 weeks from now", 14, 0)]
-        [InlineData("2 weeks from now at 3 PM", 14, 15)]
-
-        // Inputs with day and month
-        [InlineData("on May 12th", 6, 0)]
-        [InlineData("May 12th at 8:30 PM", 6, 20, 30)]
-        [InlineData("on the 12th", 6, 0)]
-        [InlineData("on the 12th at 5 PM", 6, 17)]
-
-        // Additional date formats
-        [InlineData("05/12/2023", 6, 0)]
-        [InlineData("05/12/2023 3:45 PM", 6, 15, 45)]
-        [InlineData("05-12-2023", 6, 0)]
-        [InlineData("05-12-2023 3:45 PM", 6, 15, 45)]
-        [InlineData("5/12", 6, 0)]
-        [InlineData("5/12 3:45 PM", 6, 15, 45)]
-
-        // Longer period inputs
-        [InlineData("in 10 days at 11:45 AM", 10, 11, 45)]
-        [InlineData("in 3 weeks at 18:45", 21, 18, 45)]
-        [InlineData("in 1 month", 31, 0)]
-        [InlineData("in 1 month at 4 PM", 31, 16)]
-        [InlineData("in 2 months at 10:30 AM", 61, 10, 30)]
-        [InlineData("in 6 months", 184, 0)]
-        [InlineData("in 1 year", 366, 0)]
-        [InlineData("in 1 year at 2:15 PM", 366, 14, 15)]
-        [InlineData("in 2 years at 9:00 AM", 731, 9, 0)]
+        [MemberData(nameof(DateTimeInputVariations.ValidDates), MemberType = typeof(DateTimeInputVariations))]
         public async Task ShouldRecognizeDifferentDateInputs(string userDateInput, int days, int hours, int minutes = 0)
         {
             // Arrange
             var today = new DateTime(2023, 5, 6, 0, 0, 0); // 2023-05-06 00:00 - Saturday
 
-            ConfigureCulture("en-US", "Europe/London", today);
+            ConfigureLocalization("en-US", "Europe/London", today);
 
             var expectedReminderDay = today.Date.AddDays(days).AddHours(hours).AddMinutes(minutes);
 
@@ -273,17 +212,13 @@ namespace RemindMeBot.Tests.Unit.Dialogs
         }
 
         [Theory]
-        [InlineData("invalid")]
-        [InlineData("2022-12-31 23:59")] // Past year
-        [InlineData("2023-04-30 12:00")] // Past month
-        [InlineData("2023-05-05 18:00")] // Past day
-        [InlineData("17:00")]            // Past time (same day)
-        public async Task ShouldRejectInvalidDateInputs(string invalidDateInput)
+        [MemberData(nameof(DateTimeInputVariations.InvalidDates), MemberType = typeof(DateTimeInputVariations))]
+        public async Task ShouldRejectInvalidInputAndPastDates(string invalidDateInput)
         {
             // Arrange
             var today = new DateTime(2023, 5, 6, 18, 30, 0); // 2023-05-06 18:30 - Saturday
 
-            ConfigureCulture("en-US", "Europe/London", today);
+            ConfigureLocalization("en-US", "Europe/London", today);
 
             _stateService.UserSettingsPropertyAccessor
                 .GetAsync(Arg.Any<ITurnContext>(), Arg.Any<Func<UserSettings>>(), Arg.Any<CancellationToken>())
@@ -308,5 +243,83 @@ namespace RemindMeBot.Tests.Unit.Dialogs
             testClient.DialogTurnResult.Status.Should().Be(DialogTurnStatus.Waiting);
         }
 
+
+        public class DateTimeInputVariations
+        {
+            public static IEnumerable<object[]> ValidDates()
+            {
+                // Relative time inputs
+                yield return new object[] { "in an hour", 0, 1 };
+                yield return new object[] { "in 2 hours", 0, 2 };
+                yield return new object[] { "2 hours from now", 0, 2 };
+                yield return new object[] { "in 30 minutes", 0, 0, 30 };
+                yield return new object[] { "in 90 minutes", 0, 1, 30 };
+
+                // Specific time inputs
+                yield return new object[] { "at 2 AM", 0, 2 };
+                yield return new object[] { "2pm", 0, 14 };
+
+                // Absolute date and time inputs with different formats
+                yield return new object[] { "5/6/2023 10:00 AM", 0, 10 };
+                yield return new object[] { "2023-05-08 20:00", 2, 20, 0 };
+                yield return new object[] { "2023/05/08 20:00", 2, 20, 0 };
+
+                // Relative day inputs
+                yield return new object[] { "tomorrow", 1, 0 };
+                yield return new object[] { "in 1 day", 1, 0 };
+                yield return new object[] { "in 2 days", 2, 0 };
+                yield return new object[] { "in 3 days", 3, 0 };
+
+                // Relative day inputs with specific time
+                yield return new object[] { "tomorrow at 2 PM", 1, 14 };
+                yield return new object[] { "in 2 days at 3:30 PM", 2, 15, 30 };
+
+                // Days of the week
+                yield return new object[] { "on Monday", 2, 0 };
+                yield return new object[] { "Monday at 5:30 PM", 2, 17, 30 };
+
+                // Week-related inputs
+                yield return new object[] { "in a week", 7, 0 };
+                yield return new object[] { "next Saturday", 7, 0 };
+                yield return new object[] { "next Saturday at 1:15 PM", 7, 13, 15 };
+                yield return new object[] { "next Sunday at 07:00", 8, 7, 0 };
+                yield return new object[] { "2 weeks from now", 14, 0 };
+                yield return new object[] { "2 weeks from now at 3 PM", 14, 15 };
+
+                // Inputs with day and month
+                yield return new object[] { "on May 12th", 6, 0 };
+                yield return new object[] { "May 12th at 8:30 PM", 6, 20, 30 };
+                yield return new object[] { "on the 12th", 6, 0 };
+                yield return new object[] { "on the 12th at 5 PM", 6, 17 };
+
+                // Additional date formats
+                yield return new object[] { "05-12-2023", 6, 0 };
+                yield return new object[] { "05-12-2023 3:45 PM", 6, 15, 45 };
+                yield return new object[] { "5/12", 6, 0 };
+                yield return new object[] { "5/12 3:45 PM", 6, 15, 45 };
+
+                // Longer period inputs
+                yield return new object[] { "in 10 days at 11:45 AM", 10, 11, 45 };
+                yield return new object[] { "in 3 weeks at 18:45", 21, 18, 45 };
+                yield return new object[] { "in 1 month", 31, 0 };
+                yield return new object[] { "in 1 month at 4 PM", 31, 16 };
+                yield return new object[] { "in 2 months at 10:30 AM", 61, 10, 30 };
+                yield return new object[] { "in 6 months", 184, 0 };
+                yield return new object[] { "in 1 year", 366, 0 };
+                yield return new object[] { "in 1 year at 2:15 PM", 366, 14, 15 };
+                yield return new object[] { "in 2 years at 9:00 AM", 731, 9, 0 };
+            }
+
+            public static IEnumerable<object[]> InvalidDates()
+            {
+                yield return new object[] { "invalid" };
+                yield return new object[] { "31/31" };
+                yield return new object[] { "2022-12-31 23:59" }; // Past year
+                yield return new object[] { "2023-04-30 12:00" }; // Past month
+                yield return new object[] { "2023-05-05 18:00" }; // Past day
+                yield return new object[] { "17:00" };           // Past time (same day)
+            }
+
+        }
     }
 }

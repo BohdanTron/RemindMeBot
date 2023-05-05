@@ -11,10 +11,10 @@ namespace RemindMeBot.Helpers
         }
 
         public static string GetCulture(string language) =>
-            language switch
+            language.ToLowerInvariant() switch
             {
-                "English" => "en-US",
-                "Українська" => "uk-UA",
+                "english" => "en-US",
+                "українська" => "uk-UA",
                 _ => "en-US"
             };
     }

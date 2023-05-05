@@ -79,14 +79,14 @@ namespace RemindMeBot.Tests.Unit.Dialogs
         public async Task ShouldReplyWithUnknownCommandMessage_WhenUnknownCommand(string culture)
         {
             // Arrange
-            ConfigureCulture(culture);
+            ConfigureLocalization(culture);
             var testClient = new DialogTestClient(Channels.Test, _sut, middlewares: Middlewares);
 
             // Act
             var reply = await testClient.SendActivityAsync<IMessageActivity>("/unknown-command");
 
             // Assert
-            reply.Text.Should().Be(Localizer[ResourceKeys.UnknownCommand].Value);
+            reply.Text.Should().Be(Localizer[ResourceKeys.UnknownCommand]);
         }
 
         [Theory]
@@ -95,14 +95,14 @@ namespace RemindMeBot.Tests.Unit.Dialogs
         public async Task ShouldReplyWithNoActiveOperationsMessage_WhenCancelCommand(string culture)
         {
             // Arrange
-            ConfigureCulture(culture);
+            ConfigureLocalization(culture);
             var testClient = new DialogTestClient(Channels.Test, _sut, middlewares: Middlewares);
 
             // Act
             var reply = await testClient.SendActivityAsync<IMessageActivity>("/cancel");
 
             // Assert
-            reply.Text.Should().Be(Localizer[ResourceKeys.NoActiveOperations].Value);
+            reply.Text.Should().Be(Localizer[ResourceKeys.NoActiveOperations]);
         }
 
         [Fact]
@@ -129,6 +129,31 @@ namespace RemindMeBot.Tests.Unit.Dialogs
 
             // Assert
             reply.Text.Should().Be("Your current settings:");
+        }
+
+        [Fact]
+        public async Task ShouldBeginAddReminderDialog_WhenAddReminderCommand()
+        {
+            // Arrange
+            _addReminderDialog
+                .BeginDialogAsync(Arg.Any<DialogContext>(), Arg.Any<object>(), Arg.Any<CancellationToken>())
+                .Returns(async callInfo =>
+                {
+                    var dialogContext = callInfo.Arg<DialogContext>();
+                    var cancellationToken = callInfo.Arg<CancellationToken>();
+
+                    await dialogContext.Context.SendActivityAsync("What to remind you about?", cancellationToken: cancellationToken);
+
+                    return await dialogContext.EndDialogAsync(cancellationToken: cancellationToken);
+                });
+
+            var testClient = new DialogTestClient(Channels.Test, _sut, middlewares: Middlewares);
+
+            // Act
+            var reply = await testClient.SendActivityAsync<IMessageActivity>("/add-reminder");
+
+            // Assert
+            reply.Text.Should().Be("What to remind you about?");
         }
     }
 }
