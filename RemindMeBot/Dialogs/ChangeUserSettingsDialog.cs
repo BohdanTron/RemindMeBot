@@ -1,4 +1,5 @@
-﻿using Microsoft.Bot.Builder;
+﻿using System.Globalization;
+using Microsoft.Bot.Builder;
 using Microsoft.Bot.Builder.Dialogs;
 using Microsoft.Bot.Builder.Dialogs.Choices;
 using Microsoft.Extensions.Localization;
@@ -14,17 +15,20 @@ namespace RemindMeBot.Dialogs
         private readonly IStateService _stateService;
         private readonly ILocationService _locationService;
         private readonly ITranslationService _translationService;
+        private readonly IClock _clock;
         private readonly IStringLocalizer<BotMessages> _localizer;
 
         public ChangeUserSettingsDialog(
             IStateService stateService,
             ILocationService locationService,
             ITranslationService translationService,
+            IClock clock,
             IStringLocalizer<BotMessages> localizer) : base(nameof(ChangeUserSettingsDialog), localizer)
         {
             _stateService = stateService;
             _locationService = locationService;
             _translationService = translationService;
+            _clock = clock;
             _localizer = localizer;
 
             AddDialog(new ChoicePrompt($"{nameof(ChangeUserSettingsDialog)}.settingToChange"));
@@ -56,7 +60,7 @@ namespace RemindMeBot.Dialogs
             var userSettings = await _stateService.UserSettingsPropertyAccessor.GetAsync(stepContext.Context,
                 () => new UserSettings(), cancellationToken);
 
-            if (userSettings.LocalTime is not null)
+            if (userSettings.TimeZone is not null)
             {
                 return await stepContext.NextAsync(userSettings, cancellationToken);
             }
@@ -201,8 +205,11 @@ namespace RemindMeBot.Dialogs
         private async Task DisplayCurrentUserSettings(WaterfallStepContext stepContext, UserSettings userSettings, CancellationToken cancellationToken)
         {
             // Existing of user settings must be checked in the first step of the dialog
-            var (location, language, timeZone, localTime) = userSettings;
-            var message = _localizer[ResourceKeys.UserCurrentSettings, language!, location!, timeZone!, localTime!];
+            var (location, language, timeZone) = userSettings;
+            
+            var localTime = _clock.GetLocalDateTime(timeZone!).ToString("t", CultureInfo.CurrentCulture);
+
+            var message = _localizer[ResourceKeys.UserCurrentSettings, language!, location!, timeZone!, localTime];
 
             await stepContext.Context.SendActivityAsync(MessageFactory.Text(message, message), cancellationToken);
         }

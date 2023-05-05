@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
@@ -24,10 +25,11 @@ namespace RemindMeBot.Tests.Unit.Dialogs
         private readonly IStateService _stateService = Substitute.For<IStateService>();
         private readonly ILocationService _locationService = Substitute.For<ILocationService>();
         private readonly ITranslationService _translationService = Substitute.For<ITranslationService>();
+        private readonly IClock _clock = Substitute.For<IClock>();
 
         public ChangeUserSettingsDialogTests(ITestOutputHelper output) : base(output)
         {
-            _sut = new ChangeUserSettingsDialog(_stateService, _locationService, _translationService, Localizer);
+            _sut = new ChangeUserSettingsDialog(_stateService, _locationService, _translationService, _clock, Localizer);
         }
 
         [Theory]
@@ -77,13 +79,18 @@ namespace RemindMeBot.Tests.Unit.Dialogs
                 .GetAsync(Arg.Any<ITurnContext>(), Arg.Any<Func<UserSettings>>(), Arg.Any<CancellationToken>())
                 .Returns(userSettings);
 
+            var localDate = new DateTime(2023, 5, 5, 8, 30, 0);
+            _clock.GetLocalDateTime(Arg.Any<string>())
+                .Returns(localDate);
+
             var testClient = new DialogTestClient(Channels.Test, _sut, middlewares: Middlewares);
 
             // Act / Assert
 
             // Step 1 - Display user's current settings
             var reply = await testClient.SendActivityAsync<IMessageActivity>("/my-settings");
-            var currentUserSettingsMsg = Localizer[ResourceKeys.UserCurrentSettings, currentUserLanguage, userSettings.Location, userSettings.TimeZone, userSettings.LocalTime!];
+            var localTimeCurrentCulture = localDate.ToString("t", new CultureInfo(currentUserCulture));
+            var currentUserSettingsMsg = Localizer[ResourceKeys.UserCurrentSettings, currentUserLanguage, userSettings.Location, userSettings.TimeZone, localTimeCurrentCulture];
             reply.Text.Should().Be(currentUserSettingsMsg);
 
             // Ask the setting to change (Language or Location)
@@ -101,7 +108,8 @@ namespace RemindMeBot.Tests.Unit.Dialogs
 
             // Display new user's settings
             reply = testClient.GetNextReply<IMessageActivity>();
-            var newUserSettingsMsg = Localizer[ResourceKeys.UserCurrentSettings, newUserLanguage, userSettings.Location, userSettings.TimeZone, userSettings.LocalTime!];
+            var localTimeNewCulture = localDate.ToString("t", new CultureInfo(newUserCulture));
+            var newUserSettingsMsg = Localizer[ResourceKeys.UserCurrentSettings, newUserLanguage, userSettings.Location, userSettings.TimeZone, localTimeNewCulture];
             reply.Text.Should().Be(newUserSettingsMsg);
 
             // Check dialog result
@@ -129,6 +137,12 @@ namespace RemindMeBot.Tests.Unit.Dialogs
                 TimeZone = "Europe/London"
             };
 
+            var localDate = new DateTime(2023, 5, 5, 8, 30, 0);
+            _clock.GetLocalDateTime(Arg.Any<string>())
+                .Returns(localDate);
+
+            var localTime = localDate.ToString("t", CultureInfo.CurrentCulture);
+
             var languageChoice = Localizer[ResourceKeys.Language];
             var locationChoice = Localizer[ResourceKeys.Location];
 
@@ -148,7 +162,7 @@ namespace RemindMeBot.Tests.Unit.Dialogs
 
             // Step 1 - Display user's current settings
             var reply = await testClient.SendActivityAsync<IMessageActivity>("/my-settings");
-            var currentUserSettingsMsg = Localizer[ResourceKeys.UserCurrentSettings, language, userSettings.Location, userSettings.TimeZone, userSettings.LocalTime!];
+            var currentUserSettingsMsg = Localizer[ResourceKeys.UserCurrentSettings, language, userSettings.Location, userSettings.TimeZone, localTime];
             reply.Text.Should().Be(currentUserSettingsMsg);
 
             // Ask the setting to change (Language or Location)
@@ -165,7 +179,7 @@ namespace RemindMeBot.Tests.Unit.Dialogs
 
             // Display new user's settings
             reply = testClient.GetNextReply<IMessageActivity>();
-            var newUserSettingsMsg = Localizer[ResourceKeys.UserCurrentSettings, language, newLocation, newTimeZone, userSettings.LocalTime!];
+            var newUserSettingsMsg = Localizer[ResourceKeys.UserCurrentSettings, language, newLocation, newTimeZone, localTime];
             reply.Text.Should().Be(newUserSettingsMsg);
 
             // Check dialog result
@@ -194,6 +208,12 @@ namespace RemindMeBot.Tests.Unit.Dialogs
                 TimeZone = "Europe/London"
             };
 
+            var localDate = new DateTime(2023, 5, 5, 8, 30, 0);
+            _clock.GetLocalDateTime(Arg.Any<string>())
+                .Returns(localDate);
+
+            var localTime = localDate.ToString("t", CultureInfo.CurrentCulture);
+
             var languageChoice = Localizer[ResourceKeys.Language];
             var locationChoice = Localizer[ResourceKeys.Location];
 
@@ -207,7 +227,7 @@ namespace RemindMeBot.Tests.Unit.Dialogs
 
             // Step 1 - Display user's current settings
             var reply = await testClient.SendActivityAsync<IMessageActivity>("/my-settings");
-            var currentUserSettingsMsg = Localizer[ResourceKeys.UserCurrentSettings, language, userSettings.Location, userSettings.TimeZone, userSettings.LocalTime!];
+            var currentUserSettingsMsg = Localizer[ResourceKeys.UserCurrentSettings, language, userSettings.Location, userSettings.TimeZone, localTime];
             reply.Text.Should().Be(currentUserSettingsMsg);
 
             // Ask the setting to change (Language or Location)
@@ -237,7 +257,7 @@ namespace RemindMeBot.Tests.Unit.Dialogs
 
             // Display new user's settings
             reply = testClient.GetNextReply<IMessageActivity>();
-            var newUserSettingsMsg = Localizer[ResourceKeys.UserCurrentSettings, language, newLocation, newTimeZone, userSettings.LocalTime!];
+            var newUserSettingsMsg = Localizer[ResourceKeys.UserCurrentSettings, language, newLocation, newTimeZone, localTime];
             reply.Text.Should().Be(newUserSettingsMsg);
 
             // Check dialog result

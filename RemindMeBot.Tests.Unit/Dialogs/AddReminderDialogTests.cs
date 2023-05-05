@@ -24,11 +24,11 @@ namespace RemindMeBot.Tests.Unit.Dialogs
 
         private readonly IStateService _stateService = Substitute.For<IStateService>();
         private readonly ITranslationService _translationService = Substitute.For<ITranslationService>();
-        private readonly IDateTimeConverter _dateTimeConverter = Substitute.For<IDateTimeConverter>();
+        private readonly IClock _clock = Substitute.For<IClock>();
 
         public AddReminderDialogTests(ITestOutputHelper output) : base(output)
         {
-            _sut = new AddReminderDialog(_stateService, _translationService, _dateTimeConverter, Localizer);
+            _sut = new AddReminderDialog(_stateService, _translationService, _clock, Localizer);
         }
 
         /// <summary>
@@ -244,7 +244,7 @@ namespace RemindMeBot.Tests.Unit.Dialogs
                 .GetAsync(Arg.Any<ITurnContext>(), Arg.Any<Func<UserSettings>>(), Arg.Any<CancellationToken>())
                 .Returns(new UserSettings());
 
-            _dateTimeConverter.ToLocalDateTime(Arg.Any<string>())
+            _clock.GetLocalDateTime(Arg.Any<string>())
                 .Returns(today);
 
             var testClient = new DialogTestClient(Channels.Test, _sut, middlewares: Middlewares);
@@ -289,7 +289,7 @@ namespace RemindMeBot.Tests.Unit.Dialogs
                 .GetAsync(Arg.Any<ITurnContext>(), Arg.Any<Func<UserSettings>>(), Arg.Any<CancellationToken>())
                 .Returns(new UserSettings());
 
-            _dateTimeConverter.ToLocalDateTime(Arg.Any<string>())
+            _clock.GetLocalDateTime(Arg.Any<string>())
                 .Returns(today);
 
             var testClient = new DialogTestClient(Channels.Test, _sut, middlewares: Middlewares);

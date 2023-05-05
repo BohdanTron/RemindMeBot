@@ -14,7 +14,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddSingleton<IDateTimeConverter, DateTimeConverter>();
+builder.Services.AddSingleton<IClock, Clock>();
 
 // Add localization
 builder.Services.AddLocalization();

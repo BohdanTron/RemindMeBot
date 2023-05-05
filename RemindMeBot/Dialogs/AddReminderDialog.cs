@@ -13,18 +13,18 @@ namespace RemindMeBot.Dialogs
     public class AddReminderDialog : CancelDialog
     {
         private readonly IStateService _stateService;
-        private readonly IDateTimeConverter _dateTimeConverter;
+        private readonly IClock _clock;
         private readonly IStringLocalizer<BotMessages> _localizer;
 
         public AddReminderDialog(
             IStateService stateService,
             ITranslationService translationService,
-            IDateTimeConverter dateTimeConverter,
+            IClock clock,
             IStringLocalizer<BotMessages> localizer)
             : base(nameof(AddReminderDialog), localizer)
         {
             _stateService = stateService;
-            _dateTimeConverter = dateTimeConverter;
+            _clock = clock;
             _localizer = localizer;
 
             AddDialog(new TextPrompt($"{nameof(AddReminderDialog)}.reminderText"));
@@ -188,7 +188,7 @@ namespace RemindMeBot.Dialogs
         {
             if (dateTimeResolutions is null) return null;
 
-            var currentDate = _dateTimeConverter.ToLocalDateTime(userSettings.TimeZone!);
+            var currentDate = _clock.GetLocalDateTime(userSettings.TimeZone!);
 
             foreach (var dateTimeResolution in dateTimeResolutions)
             {

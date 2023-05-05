@@ -9,12 +9,12 @@ namespace RemindMeBot.Middlewares
     public class LocalizationMiddleware : IMiddleware
     {
         private readonly IStateService _stateService;
-        private readonly IDateTimeConverter _dateTimeConverter;
+        private readonly IClock _clock;
 
-        public LocalizationMiddleware(IStateService stateService, IDateTimeConverter dateTimeConverter)
+        public LocalizationMiddleware(IStateService stateService, IClock clock)
         {
             _stateService = stateService;
-            _dateTimeConverter = dateTimeConverter;
+            _clock = clock;
         }
 
         public async Task OnTurnAsync(ITurnContext turnContext, NextDelegate next, CancellationToken cancellationToken = new())
@@ -31,7 +31,7 @@ namespace RemindMeBot.Middlewares
 
             turnContext.Activity.LocalTimezone = userSettings.TimeZone ?? turnContext.Activity.LocalTimezone;
             turnContext.Activity.LocalTimestamp = userSettings.TimeZone is not null
-                ? _dateTimeConverter.ToLocalDateTime(userSettings.TimeZone)
+                ? _clock.GetLocalDateTime(userSettings.TimeZone)
                 : turnContext.Activity.LocalTimestamp;
 
             await next(cancellationToken);

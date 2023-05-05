@@ -1,4 +1,5 @@
-﻿using Microsoft.Bot.Builder;
+﻿using System.Globalization;
+using Microsoft.Bot.Builder;
 using Microsoft.Bot.Builder.Dialogs;
 using Microsoft.Bot.Builder.Dialogs.Choices;
 using Microsoft.Bot.Schema;
@@ -13,8 +14,9 @@ namespace RemindMeBot.Dialogs
     public class UserSettingsDialog : CancelDialog
     {
         private readonly IStateService _stateService;
-        private readonly ILocationService _locationService;
         private readonly ITranslationService _translationService;
+        private readonly ILocationService _locationService;
+        private readonly IClock _clock;
 
         private readonly IStringLocalizer<BotMessages> _localizer;
 
@@ -22,10 +24,12 @@ namespace RemindMeBot.Dialogs
             IStateService stateService,
             ITranslationService translationService,
             ILocationService locationService,
+            IClock clock,
             IStringLocalizer<BotMessages> localizer) : base(nameof(UserSettingsDialog), localizer)
         {
             _stateService = stateService;
             _translationService = translationService;
+            _clock = clock;
             _locationService = locationService;
             _localizer = localizer;
 
@@ -125,8 +129,11 @@ namespace RemindMeBot.Dialogs
                 TimeZone = preciseLocation.TimeZoneId
             };
             await _stateService.UserSettingsPropertyAccessor.SetAsync(stepContext.Context, userSettings, cancellationToken);
-            
-            var message = _localizer[ResourceKeys.UserCurrentSettings, language, userSettings.Location, preciseLocation.TimeZoneId, userSettings.LocalTime!];
+
+            var localTime = _clock.GetLocalDateTime(userSettings.TimeZone)
+                .ToString("t", CultureInfo.CurrentCulture);
+
+            var message = _localizer[ResourceKeys.UserCurrentSettings, language, userSettings.Location, preciseLocation.TimeZoneId, localTime];
 
             await stepContext.Context.SendActivityAsync(MessageFactory.Text(message, message), cancellationToken);
 
