@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
+using Azure.Data.Tables;
 using FluentAssertions;
 using Microsoft.Bot.Builder;
 using Microsoft.Bot.Builder.Dialogs;
@@ -26,10 +28,11 @@ namespace RemindMeBot.Tests.Unit.Dialogs
         private readonly IStateService _stateService = Substitute.For<IStateService>();
         private readonly ITranslationService _translationService = Substitute.For<ITranslationService>();
         private readonly IClock _clock = Substitute.For<IClock>();
+        private readonly ReminderTableService _reminderTableService = Substitute.ForPartsOf<ReminderTableService>(Substitute.For<TableServiceClient>());
 
         public AddReminderDialogTests(ITestOutputHelper output) : base(output)
         {
-            _sut = new AddReminderDialog(_stateService, _translationService, _clock, Localizer);
+            _sut = new AddReminderDialog(_stateService, _translationService, _clock, _reminderTableService, Localizer);
         }
 
         /// <summary>
@@ -74,6 +77,9 @@ namespace RemindMeBot.Tests.Unit.Dialogs
                 .Translate(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>())
                 .Returns("tomorrow at 14:00");
 
+            _reminderTableService.AddReminder(Arg.Any<ReminderEntity>(), Arg.Any<CancellationToken>())
+                .Returns(Task.CompletedTask);
+
             var testClient = new DialogTestClient(Channels.Test, _sut, middlewares: Middlewares);
 
             // Act / Assert
@@ -94,13 +100,17 @@ namespace RemindMeBot.Tests.Unit.Dialogs
             reply.Text.Should().Be(Localizer[ResourceKeys.RepeatedReminderAdded, reminderText, reminderDateTime, repeatInterval]);
 
             // Check dialog result
-            testClient.DialogTurnResult.Result.Should().Be(new Reminder
+            var conversation = testClient.DialogContext.Context.Activity.GetConversationReference();
+            testClient.DialogTurnResult.Result.Should().BeEquivalentTo(new ReminderEntity
             {
+                PartitionKey = conversation.User.Id,
                 Text = reminderText,
-                Date = reminderDateTime,
+                DateTimeLocal = reminderDateTime.ToString(CultureInfo.CurrentCulture),
                 ShouldRepeat = true,
-                RepeatInterval = repeatInterval
-            });
+                RepeatInterval = repeatInterval,
+                TimeZone = userSettings.TimeZone!,
+                Culture = userSettings.Culture
+            }, options => options.Excluding(e => e.RowKey).Excluding(e => e.CreationDateTimeUtc));
         }
 
         /// <summary>
@@ -142,6 +152,9 @@ namespace RemindMeBot.Tests.Unit.Dialogs
                 .Translate(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>())
                 .Returns("tomorrow at 14:00");
 
+            _reminderTableService.AddReminder(Arg.Any<ReminderEntity>(), Arg.Any<CancellationToken>())
+                .Returns(Task.CompletedTask);
+
             var testClient = new DialogTestClient(Channels.Test, _sut, middlewares: Middlewares);
 
             // Act / Assert
@@ -159,13 +172,17 @@ namespace RemindMeBot.Tests.Unit.Dialogs
             reply.Text.Should().Be(Localizer[ResourceKeys.ReminderAdded, reminderText, reminderDateTime]);
 
             // Check dialog result
-            testClient.DialogTurnResult.Result.Should().Be(new Reminder
+            var conversation = testClient.DialogContext.Context.Activity.GetConversationReference();
+            testClient.DialogTurnResult.Result.Should().BeEquivalentTo(new ReminderEntity
             {
+                PartitionKey = conversation.User.Id,
                 Text = reminderText,
-                Date = reminderDateTime,
+                DateTimeLocal = reminderDateTime.ToString(CultureInfo.CurrentCulture),
                 ShouldRepeat = false,
-                RepeatInterval = null
-            });
+                RepeatInterval = null,
+                TimeZone = userSettings.TimeZone!,
+                Culture = userSettings.Culture
+            }, options => options.Excluding(e => e.RowKey).Excluding(e => e.CreationDateTimeUtc));
         }
 
         [Theory]
@@ -185,6 +202,9 @@ namespace RemindMeBot.Tests.Unit.Dialogs
 
             _clock.GetLocalDateTime(Arg.Any<string>())
                 .Returns(today);
+            
+            _reminderTableService.AddReminder(Arg.Any<ReminderEntity>(), Arg.Any<CancellationToken>())
+                .Returns(Task.CompletedTask);
 
             var testClient = new DialogTestClient(Channels.Test, _sut, middlewares: Middlewares);
 
@@ -202,13 +222,18 @@ namespace RemindMeBot.Tests.Unit.Dialogs
             reply.Text.Should().Be(Localizer[ResourceKeys.ReminderAdded, "Reminder text", expectedReminderDay]);
 
             // Check dialog result
-            testClient.DialogTurnResult.Result.Should().Be(new Reminder
+            var conversation = testClient.DialogContext.Context.Activity.GetConversationReference();
+            testClient.DialogTurnResult.Result.Should().BeEquivalentTo(new ReminderEntity
             {
+                PartitionKey = conversation.User.Id,
                 Text = "Reminder text",
-                Date = expectedReminderDay,
+                DateTimeLocal = expectedReminderDay.ToString(CultureInfo.CurrentCulture),
                 ShouldRepeat = false,
-                RepeatInterval = null
-            });
+                RepeatInterval = null,
+            }, options => options.Excluding(e => e.RowKey)
+                                 .Excluding(e => e.CreationDateTimeUtc)
+                                 .Excluding(e => e.TimeZone)
+                                 .Excluding(e => e.Culture));
         }
 
         [Theory]

@@ -14,17 +14,19 @@ namespace RemindMeBot.Dialogs
     {
         private readonly IStateService _stateService;
         private readonly IClock _clock;
+        private readonly ReminderTableService _reminderTableService;
         private readonly IStringLocalizer<BotMessages> _localizer;
 
         public AddReminderDialog(
             IStateService stateService,
             ITranslationService translationService,
             IClock clock,
-            IStringLocalizer<BotMessages> localizer)
-            : base(nameof(AddReminderDialog), localizer)
+            ReminderTableService reminderTableService,
+            IStringLocalizer<BotMessages> localizer) : base(nameof(AddReminderDialog), localizer)
         {
             _stateService = stateService;
             _clock = clock;
+            _reminderTableService = reminderTableService;
             _localizer = localizer;
 
             AddDialog(new TextPrompt($"{nameof(AddReminderDialog)}.reminderText"));
@@ -102,7 +104,7 @@ namespace RemindMeBot.Dialogs
             var userSettings = await _stateService.UserSettingsPropertyAccessor.GetAsync(stepContext.Context,
                 () => new UserSettings(), cancellationToken);
 
-            var recognizedDate = RecognizeDate(dateTimeResolutions, userSettings);
+            var recognizedDate = RecognizeDate(dateTimeResolutions, userSettings.TimeZone!);
             if (recognizedDate is null)
             {
                 return await stepContext.ReplaceDialogAsync($"{nameof(AddReminderDialog)}.retryReminderDate",
@@ -165,15 +167,24 @@ namespace RemindMeBot.Dialogs
             var shouldRepeat = (bool) stepContext.Values["shouldRepeat"];
             var repeatInterval = ((FoundChoice) stepContext.Result)?.Value;
 
-            var reminder = new Reminder
+            var userSettings = await _stateService.UserSettingsPropertyAccessor.GetAsync(stepContext.Context,
+                () => new UserSettings(), cancellationToken);
+
+            var conversation = stepContext.Context.Activity.GetConversationReference();
+            var reminder = new ReminderEntity
             {
+                PartitionKey = conversation.User.Id,
+                RowKey = $"{conversation.Conversation.Id}_{Guid.NewGuid()}",
                 Text = text,
-                Date = date,
+                DateTimeLocal = date.ToString(CultureInfo.CurrentCulture),
+                CreationDateTimeUtc = DateTime.UtcNow,
+                RepeatInterval = repeatInterval,
                 ShouldRepeat = shouldRepeat,
-                RepeatInterval = repeatInterval
+                TimeZone = userSettings.TimeZone!,
+                Culture = userSettings.Culture!
             };
 
-            // TODO: Save gathered info to the storage
+            await _reminderTableService.AddReminder(reminder, cancellationToken);
 
             var reminderAddedMsg = shouldRepeat
                 ? _localizer[ResourceKeys.RepeatedReminderAdded, text, date, repeatInterval!]
@@ -184,11 +195,11 @@ namespace RemindMeBot.Dialogs
             return await stepContext.EndDialogAsync(reminder, cancellationToken);
         }
 
-        private DateTime? RecognizeDate(List<DateTimeResolution>? dateTimeResolutions, UserSettings userSettings)
+        private DateTime? RecognizeDate(List<DateTimeResolution>? dateTimeResolutions, string timeZone)
         {
             if (dateTimeResolutions is null) return null;
 
-            var currentDate = _clock.GetLocalDateTime(userSettings.TimeZone!);
+            var currentDate = _clock.GetLocalDateTime(timeZone);
 
             foreach (var dateTimeResolution in dateTimeResolutions)
             {

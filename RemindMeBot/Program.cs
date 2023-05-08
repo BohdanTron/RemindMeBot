@@ -1,3 +1,4 @@
+using Azure.Data.Tables;
 using AzureMapsToolkit;
 using Microsoft.Bot.Builder;
 using Microsoft.Bot.Builder.Integration.AspNet.Core;
@@ -15,6 +16,16 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddSingleton<IClock, Clock>();
+
+// Register Azure Table Storage
+var tableServiceClient =
+    new TableServiceClient(
+        new Uri(builder.Configuration["AzureTableStorageSettings:Endpoint"]),
+        new TableSharedKeyCredential(
+            builder.Configuration["AzureTableStorageSettings:AccountName"],
+            builder.Configuration["AzureTableStorageSettings:AccountKey"]));
+
+builder.Services.AddSingleton(tableServiceClient);
 
 // Add localization
 builder.Services.AddLocalization();
