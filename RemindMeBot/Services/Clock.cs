@@ -5,17 +5,17 @@ namespace RemindMeBot.Services
 {
     public interface IClock
     {
-        DateTime GetLocalDateTime(string timeZone);
+        DateTimeOffset GetLocalDateTime(string timeZone);
     }
 
     public class Clock : IClock
     {
-        public DateTime GetLocalDateTime(string timeZone)
+        public DateTimeOffset GetLocalDateTime(string timeZone)
         {
             var userTimeZone = DateTimeZoneProviders.Tzdb[timeZone];
             var clock = SystemClock.Instance.InZone(userTimeZone);
 
-            var localDateTime = clock.GetCurrentZonedDateTime().ToDateTimeUnspecified();
+            var localDateTime = clock.GetCurrentZonedDateTime().ToDateTimeOffset();
 
             return localDateTime;
         }

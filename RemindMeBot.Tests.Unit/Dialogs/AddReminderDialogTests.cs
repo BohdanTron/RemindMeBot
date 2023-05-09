@@ -80,6 +80,9 @@ namespace RemindMeBot.Tests.Unit.Dialogs
             _reminderTableService.AddReminder(Arg.Any<ReminderEntity>(), Arg.Any<CancellationToken>())
                 .Returns(Task.CompletedTask);
 
+            var reminderDateTime = DateTime.UtcNow.AddDays(1).Date.AddHours(14);
+            var expectedReminderDateTimeOffset = new DateTimeOffset(reminderDateTime, TimeSpan.Zero);
+
             var testClient = new DialogTestClient(Channels.Test, _sut, middlewares: Middlewares);
 
             // Act / Assert
@@ -89,7 +92,6 @@ namespace RemindMeBot.Tests.Unit.Dialogs
             reply = await testClient.SendActivityAsync<IMessageActivity>(reminderText);
             reply.Text.Should().Be(Localizer[ResourceKeys.AskForReminderDate]);
 
-            var reminderDateTime = DateTime.Now.AddDays(1).Date.AddHours(14);
             reply = await testClient.SendActivityAsync<IMessageActivity>(reminderTime);
             reply.Text.Should().Be($"{Localizer[ResourceKeys.AskWhetherToRepeatReminder]} (1) {Localizer[ResourceKeys.Yes]} or (2) {Localizer[ResourceKeys.No]}");
 
@@ -97,20 +99,19 @@ namespace RemindMeBot.Tests.Unit.Dialogs
             reply.Text.Should().Be($"{Localizer[ResourceKeys.AskForRepeatInterval]}\n\n   1. {Localizer[ResourceKeys.Daily]}\n   2. {Localizer[ResourceKeys.Weekly]}\n   3. {Localizer[ResourceKeys.Monthly]}\n   4. {Localizer[ResourceKeys.Yearly]}");
 
             reply = await testClient.SendActivityAsync<IMessageActivity>(Localizer[ResourceKeys.Weekly]);
-            reply.Text.Should().Be(Localizer[ResourceKeys.RepeatedReminderAdded, reminderText, reminderDateTime, repeatInterval]);
+            reply.Text.Should().Be(Localizer[ResourceKeys.RepeatedReminderAdded, reminderText, expectedReminderDateTimeOffset, repeatInterval]);
 
             // Check dialog result
             var conversation = testClient.DialogContext.Context.Activity.GetConversationReference();
-            testClient.DialogTurnResult.Result.Should().BeEquivalentTo(new ReminderEntity
-            {
-                PartitionKey = conversation.User.Id,
-                Text = reminderText,
-                DateTimeLocal = reminderDateTime.ToString(CultureInfo.CurrentCulture),
-                ShouldRepeat = true,
-                RepeatInterval = repeatInterval,
-                TimeZone = userSettings.TimeZone!,
-                Culture = userSettings.Culture
-            }, options => options.Excluding(e => e.RowKey).Excluding(e => e.CreationDateTimeUtc));
+            var result = (ReminderEntity) testClient.DialogTurnResult.Result;
+            
+            result.PartitionKey.Should().Be(conversation.User.Id);
+            result.Text.Should().Be(reminderText);
+            result.LocalDueDate.Should().Be(expectedReminderDateTimeOffset.ToString(CultureInfo.CurrentCulture));
+            result.ShouldRepeat.Should().BeTrue();
+            result.RepeatInterval.Should().Be(repeatInterval);
+            result.TimeZone.Should().Be(userSettings.TimeZone);
+            result.Culture.Should().Be(userSettings.Culture);
         }
 
         /// <summary>
@@ -155,6 +156,9 @@ namespace RemindMeBot.Tests.Unit.Dialogs
             _reminderTableService.AddReminder(Arg.Any<ReminderEntity>(), Arg.Any<CancellationToken>())
                 .Returns(Task.CompletedTask);
 
+            var reminderDateTime = DateTime.UtcNow.AddDays(1).Date.AddHours(14);
+            var expectedReminderDateTimeOffset = new DateTimeOffset(reminderDateTime, TimeSpan.Zero);
+
             var testClient = new DialogTestClient(Channels.Test, _sut, middlewares: Middlewares);
 
             // Act / Assert
@@ -164,25 +168,20 @@ namespace RemindMeBot.Tests.Unit.Dialogs
             reply = await testClient.SendActivityAsync<IMessageActivity>(reminderText);
             reply.Text.Should().Be(Localizer[ResourceKeys.AskForReminderDate]);
 
-            var reminderDateTime = DateTime.Now.AddDays(1).Date.AddHours(14);
             reply = await testClient.SendActivityAsync<IMessageActivity>(reminderTime);
             reply.Text.Should().Be($"{Localizer[ResourceKeys.AskWhetherToRepeatReminder]} (1) {Localizer[ResourceKeys.Yes]} or (2) {Localizer[ResourceKeys.No]}");
 
             reply = await testClient.SendActivityAsync<IMessageActivity>(Localizer[ResourceKeys.No]);
-            reply.Text.Should().Be(Localizer[ResourceKeys.ReminderAdded, reminderText, reminderDateTime]);
+            reply.Text.Should().Be(Localizer[ResourceKeys.ReminderAdded, reminderText, expectedReminderDateTimeOffset]);
 
             // Check dialog result
             var conversation = testClient.DialogContext.Context.Activity.GetConversationReference();
-            testClient.DialogTurnResult.Result.Should().BeEquivalentTo(new ReminderEntity
-            {
-                PartitionKey = conversation.User.Id,
-                Text = reminderText,
-                DateTimeLocal = reminderDateTime.ToString(CultureInfo.CurrentCulture),
-                ShouldRepeat = false,
-                RepeatInterval = null,
-                TimeZone = userSettings.TimeZone!,
-                Culture = userSettings.Culture
-            }, options => options.Excluding(e => e.RowKey).Excluding(e => e.CreationDateTimeUtc));
+
+            var result = (ReminderEntity) testClient.DialogTurnResult.Result;
+            result.PartitionKey.Should().Be(conversation.User.Id);
+            result.Text.Should().Be(reminderText);
+            result.LocalDueDate.Should().Be(expectedReminderDateTimeOffset.ToString(CultureInfo.CurrentCulture));
+            result.RepeatInterval.Should().BeNull();
         }
 
         [Theory]
@@ -190,11 +189,12 @@ namespace RemindMeBot.Tests.Unit.Dialogs
         public async Task ShouldRecognizeDifferentDateInputs(string userDateInput, int days, int hours, int minutes = 0)
         {
             // Arrange
-            var today = new DateTime(2023, 5, 6, 0, 0, 0); // 2023-05-06 00:00 - Saturday
+            var today = new DateTimeOffset(2023, 5, 6, 0, 0, 0, TimeSpan.FromHours(1)); // 2023-05-06 00:00 +01:00 - Saturday
 
             ConfigureLocalization("en-US", "Europe/London", today);
 
-            var expectedReminderDay = today.Date.AddDays(days).AddHours(hours).AddMinutes(minutes);
+            var expectedReminderDate = today.Date.AddDays(days).AddHours(hours).AddMinutes(minutes);
+            var expectedReminderDateTimeOffset = new DateTimeOffset(expectedReminderDate, TimeSpan.FromHours(1));
 
             _stateService.UserSettingsPropertyAccessor
                 .GetAsync(Arg.Any<ITurnContext>(), Arg.Any<Func<UserSettings>>(), Arg.Any<CancellationToken>())
@@ -219,21 +219,16 @@ namespace RemindMeBot.Tests.Unit.Dialogs
             reply.Text.Should().Be($"{Localizer[ResourceKeys.AskWhetherToRepeatReminder]} (1) {Localizer[ResourceKeys.Yes]} or (2) {Localizer[ResourceKeys.No]}");
 
             reply = await testClient.SendActivityAsync<IMessageActivity>(Localizer[ResourceKeys.No]);
-            reply.Text.Should().Be(Localizer[ResourceKeys.ReminderAdded, "Reminder text", expectedReminderDay]);
+            reply.Text.Should().Be(Localizer[ResourceKeys.ReminderAdded, "Reminder text", expectedReminderDateTimeOffset]);
 
             // Check dialog result
             var conversation = testClient.DialogContext.Context.Activity.GetConversationReference();
-            testClient.DialogTurnResult.Result.Should().BeEquivalentTo(new ReminderEntity
-            {
-                PartitionKey = conversation.User.Id,
-                Text = "Reminder text",
-                DateTimeLocal = expectedReminderDay.ToString(CultureInfo.CurrentCulture),
-                ShouldRepeat = false,
-                RepeatInterval = null,
-            }, options => options.Excluding(e => e.RowKey)
-                                 .Excluding(e => e.CreationDateTimeUtc)
-                                 .Excluding(e => e.TimeZone)
-                                 .Excluding(e => e.Culture));
+            
+            var result = (ReminderEntity) testClient.DialogTurnResult.Result;
+            result.PartitionKey.Should().Be(conversation.User.Id);
+            result.Text.Should().Be("Reminder text");
+            result.LocalDueDate.Should().Be(expectedReminderDateTimeOffset.ToString(CultureInfo.CurrentCulture));
+            result.RepeatInterval.Should().BeNull();
         }
 
         [Theory]

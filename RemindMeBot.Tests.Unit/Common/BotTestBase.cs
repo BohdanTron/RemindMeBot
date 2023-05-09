@@ -24,7 +24,7 @@ namespace RemindMeBot.Tests.Unit.Common
             SetupLocalizer();
         }
 
-        protected void ConfigureLocalization(string culture, string? localTimeZone = null, DateTime? localTimeStamp = null)
+        protected void ConfigureLocalization(string culture, string? localTimeZone = null, DateTimeOffset? localTimeStamp = null)
         {
             // Set culture for the current test
             SetCurrentCulture(culture);

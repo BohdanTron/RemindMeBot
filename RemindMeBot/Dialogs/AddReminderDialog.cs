@@ -162,7 +162,7 @@ namespace RemindMeBot.Dialogs
         private async Task<DialogTurnResult> SaveReminderStep(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
             var text = (string) stepContext.Values["reminderText"];
-            var date = (DateTime) stepContext.Values["reminderDate"];
+            var date = (DateTimeOffset) stepContext.Values["reminderDate"];
 
             var shouldRepeat = (bool) stepContext.Values["shouldRepeat"];
             var repeatInterval = ((FoundChoice) stepContext.Result)?.Value;
@@ -176,12 +176,12 @@ namespace RemindMeBot.Dialogs
                 PartitionKey = conversation.User.Id,
                 RowKey = $"{conversation.Conversation.Id}_{Guid.NewGuid()}",
                 Text = text,
-                DateTimeLocal = date.ToString(CultureInfo.CurrentCulture),
-                CreationDateTimeUtc = DateTime.UtcNow,
+                LocalDueDate = date.ToString(CultureInfo.CurrentCulture),
+                CreationDateTimeUtc = DateTimeOffset.UtcNow,
                 RepeatInterval = repeatInterval,
                 ShouldRepeat = shouldRepeat,
                 TimeZone = userSettings.TimeZone!,
-                Culture = userSettings.Culture!
+                Culture = CultureInfo.CurrentCulture.Name
             };
 
             await _reminderTableService.AddReminder(reminder, cancellationToken);
@@ -195,30 +195,32 @@ namespace RemindMeBot.Dialogs
             return await stepContext.EndDialogAsync(reminder, cancellationToken);
         }
 
-        private DateTime? RecognizeDate(List<DateTimeResolution>? dateTimeResolutions, string timeZone)
+        private DateTimeOffset? RecognizeDate(List<DateTimeResolution>? dateTimeResolutions, string timeZone)
         {
             if (dateTimeResolutions is null) return null;
 
-            var currentDate = _clock.GetLocalDateTime(timeZone);
+            var localDateTimeOffset = _clock.GetLocalDateTime(timeZone);
 
             foreach (var dateTimeResolution in dateTimeResolutions)
             {
                 if (!DateTime.TryParse(dateTimeResolution.Value, CultureInfo.CurrentCulture, DateTimeStyles.NoCurrentDateDefault,
-                        out var recognizedDate))
+                        out var recognizedDateTime))
                     continue;
 
-                // Use current date if the only time specified
-                if (recognizedDate.Date == default)
+                // Use current date if only the time is specified
+                if (recognizedDateTime.Date == default)
                 {
-                    recognizedDate = new DateTime(currentDate.Year, currentDate.Month, currentDate.Day,
-                        recognizedDate.Hour, recognizedDate.Minute, recognizedDate.Second);
+                    recognizedDateTime = new DateTime(localDateTimeOffset.Year, localDateTimeOffset.Month, localDateTimeOffset.Day,
+                        recognizedDateTime.Hour, recognizedDateTime.Minute, recognizedDateTime.Second);
                 }
 
+                var recognizedDateTimeOffset = new DateTimeOffset(recognizedDateTime, localDateTimeOffset.Offset);
+
                 // Ignore past dates and time
-                if (DateTime.Compare(currentDate, recognizedDate) > 0)
+                if (DateTimeOffset.Compare(localDateTimeOffset, recognizedDateTimeOffset) > 0)
                     continue;
 
-                return recognizedDate;
+                return recognizedDateTimeOffset;
             }
 
             return null;

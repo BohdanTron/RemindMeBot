@@ -26,6 +26,7 @@ var tableServiceClient =
             builder.Configuration["AzureTableStorageSettings:AccountKey"]));
 
 builder.Services.AddSingleton(tableServiceClient);
+builder.Services.AddSingleton<ReminderTableService>();
 
 // Add localization
 builder.Services.AddLocalization();

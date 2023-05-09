@@ -80,7 +80,7 @@ namespace RemindMeBot.Dialogs.Prompts
                 // Ukrainian culture is not supported in Microsoft.Recognizers.Text, so will use Dutch culture as the closest one
                 var culture = turnContext.Activity.Locale == "uk-UA" ? Dutch : turnContext.Activity.Locale;
 
-                var refTime = turnContext.Activity.LocalTimestamp?.LocalDateTime;
+                var refTime = turnContext.Activity.LocalTimestamp?.DateTime;
                 var results = DateTimeRecognizer.RecognizeDateTime(utterance, culture, refTime: refTime);
 
                 if (results.Any())

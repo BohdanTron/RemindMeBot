@@ -11,9 +11,9 @@ namespace RemindMeBot.Tests.Unit.Common
         private readonly CultureInfo _culture;
 
         private readonly string? _localTimeZone;
-        private readonly DateTime? _localTmeStamp;
+        private readonly DateTimeOffset? _localTmeStamp;
 
-        public TestLocalizationMiddleware(CultureInfo culture, string? localTimeZone = null, DateTime? localTmeStamp = null)
+        public TestLocalizationMiddleware(CultureInfo culture, string? localTimeZone = null, DateTimeOffset? localTmeStamp = null)
         {
             _culture = culture;
             _localTimeZone = localTimeZone;
