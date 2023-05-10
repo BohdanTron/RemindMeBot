@@ -1,4 +1,5 @@
 using Azure.Data.Tables;
+using Azure.Storage.Queues;
 using AzureMapsToolkit;
 using Microsoft.Bot.Builder;
 using Microsoft.Bot.Builder.Integration.AspNet.Core;
@@ -27,6 +28,13 @@ var tableServiceClient =
 
 builder.Services.AddSingleton(tableServiceClient);
 builder.Services.AddSingleton<ReminderTableService>();
+
+// Register Azure Storage Queues
+var reminderQueueClient = new QueueClient(
+    builder.Configuration["AzureQueuesSettings:ConnectionString"],
+    builder.Configuration["AzureQueuesSettings:RemindersQueueName"]);
+
+builder.Services.AddSingleton(new ReminderQueueService(reminderQueueClient));
 
 // Add localization
 builder.Services.AddLocalization();

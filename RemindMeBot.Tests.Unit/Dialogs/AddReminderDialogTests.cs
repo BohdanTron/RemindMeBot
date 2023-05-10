@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
 using Azure.Data.Tables;
+using Azure.Storage.Queues;
 using FluentAssertions;
 using Microsoft.Bot.Builder;
 using Microsoft.Bot.Builder.Dialogs;
@@ -29,10 +30,11 @@ namespace RemindMeBot.Tests.Unit.Dialogs
         private readonly ITranslationService _translationService = Substitute.For<ITranslationService>();
         private readonly IClock _clock = Substitute.For<IClock>();
         private readonly ReminderTableService _reminderTableService = Substitute.ForPartsOf<ReminderTableService>(Substitute.For<TableServiceClient>());
+        private readonly ReminderQueueService _reminderQueueService = Substitute.ForPartsOf<ReminderQueueService>(Substitute.For<QueueClient>());
 
         public AddReminderDialogTests(ITestOutputHelper output) : base(output)
         {
-            _sut = new AddReminderDialog(_stateService, _translationService, _clock, _reminderTableService, Localizer);
+            _sut = new AddReminderDialog(_stateService, _translationService, _clock, _reminderTableService, _reminderQueueService, Localizer);
         }
 
         /// <summary>
@@ -104,7 +106,7 @@ namespace RemindMeBot.Tests.Unit.Dialogs
             // Check dialog result
             var conversation = testClient.DialogContext.Context.Activity.GetConversationReference();
             var result = (ReminderEntity) testClient.DialogTurnResult.Result;
-            
+
             result.PartitionKey.Should().Be(conversation.User.Id);
             result.Text.Should().Be(reminderText);
             result.LocalDueDate.Should().Be(expectedReminderDateTimeOffset.ToString(CultureInfo.CurrentCulture));
@@ -202,7 +204,7 @@ namespace RemindMeBot.Tests.Unit.Dialogs
 
             _clock.GetLocalDateTime(Arg.Any<string>())
                 .Returns(today);
-            
+
             _reminderTableService.AddReminder(Arg.Any<ReminderEntity>(), Arg.Any<CancellationToken>())
                 .Returns(Task.CompletedTask);
 
@@ -223,7 +225,7 @@ namespace RemindMeBot.Tests.Unit.Dialogs
 
             // Check dialog result
             var conversation = testClient.DialogContext.Context.Activity.GetConversationReference();
-            
+
             var result = (ReminderEntity) testClient.DialogTurnResult.Result;
             result.PartitionKey.Should().Be(conversation.User.Id);
             result.Text.Should().Be("Reminder text");

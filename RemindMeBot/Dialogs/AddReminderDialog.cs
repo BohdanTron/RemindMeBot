@@ -14,7 +14,10 @@ namespace RemindMeBot.Dialogs
     {
         private readonly IStateService _stateService;
         private readonly IClock _clock;
+        
         private readonly ReminderTableService _reminderTableService;
+        private readonly ReminderQueueService _reminderQueueService;
+
         private readonly IStringLocalizer<BotMessages> _localizer;
 
         public AddReminderDialog(
@@ -22,11 +25,13 @@ namespace RemindMeBot.Dialogs
             ITranslationService translationService,
             IClock clock,
             ReminderTableService reminderTableService,
+            ReminderQueueService reminderQueueService,
             IStringLocalizer<BotMessages> localizer) : base(nameof(AddReminderDialog), localizer)
         {
             _stateService = stateService;
             _clock = clock;
             _reminderTableService = reminderTableService;
+            _reminderQueueService = reminderQueueService;
             _localizer = localizer;
 
             AddDialog(new TextPrompt($"{nameof(AddReminderDialog)}.reminderText"));
@@ -185,6 +190,7 @@ namespace RemindMeBot.Dialogs
             };
 
             await _reminderTableService.AddReminder(reminder, cancellationToken);
+            await _reminderQueueService.SendReminderCreatedMessage(reminder.PartitionKey, reminder.RowKey, cancellationToken);
 
             var reminderAddedMsg = shouldRepeat
                 ? _localizer[ResourceKeys.RepeatedReminderAdded, text, date, repeatInterval!]
