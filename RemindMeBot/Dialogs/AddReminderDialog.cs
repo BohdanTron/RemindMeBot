@@ -26,7 +26,7 @@ namespace RemindMeBot.Dialogs
             IClock clock,
             ReminderTableService reminderTableService,
             ReminderQueueService reminderQueueService,
-            IStringLocalizer<BotMessages> localizer) : base(nameof(AddReminderDialog), localizer)
+            IStringLocalizer<BotMessages> localizer) : base(nameof(AddReminderDialog), stateService, localizer)
         {
             _stateService = stateService;
             _clock = clock;
@@ -42,6 +42,7 @@ namespace RemindMeBot.Dialogs
             AddDialog(new WaterfallDialog($"{nameof(AddReminderDialog)}.main",
                 new WaterfallStep[]
                 {
+                    CheckUserSettingsExistStep,
                     AskForReminderTextStep,
                     AskForReminderDateStep,
                     AskWhetherToRepeatReminderStep,

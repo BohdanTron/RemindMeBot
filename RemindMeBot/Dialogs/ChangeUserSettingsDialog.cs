@@ -23,7 +23,7 @@ namespace RemindMeBot.Dialogs
             ILocationService locationService,
             ITranslationService translationService,
             IClock clock,
-            IStringLocalizer<BotMessages> localizer) : base(nameof(ChangeUserSettingsDialog), localizer)
+            IStringLocalizer<BotMessages> localizer) : base(nameof(ChangeUserSettingsDialog), stateService, localizer)
         {
             _stateService = stateService;
             _locationService = locationService;
@@ -53,22 +53,6 @@ namespace RemindMeBot.Dialogs
                 }));
 
             InitialDialogId = $"{nameof(ChangeUserSettingsDialog)}.main";
-        }
-
-        private async Task<DialogTurnResult> CheckUserSettingsExistStep(WaterfallStepContext stepContext, CancellationToken cancellationToken)
-        {
-            var userSettings = await _stateService.UserSettingsPropertyAccessor.GetAsync(stepContext.Context,
-                () => new UserSettings(), cancellationToken);
-
-            if (userSettings.TimeZone is not null)
-            {
-                return await stepContext.NextAsync(userSettings, cancellationToken);
-            }
-
-            var message = _localizer[ResourceKeys.NoUserSettings];
-            await stepContext.Context.SendActivityAsync(MessageFactory.Text(message, message), cancellationToken);
-
-            return await stepContext.EndDialogAsync(null, cancellationToken);
         }
 
         private async Task<DialogTurnResult> ShowCurrentSettingsStep(WaterfallStepContext stepContext, CancellationToken cancellationToken)

@@ -25,7 +25,7 @@ namespace RemindMeBot.Dialogs
             ITranslationService translationService,
             ILocationService locationService,
             IClock clock,
-            IStringLocalizer<BotMessages> localizer) : base(nameof(UserSettingsDialog), localizer)
+            IStringLocalizer<BotMessages> localizer) : base(nameof(UserSettingsDialog), stateService, localizer)
         {
             _stateService = stateService;
             _translationService = translationService;

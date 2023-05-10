@@ -200,7 +200,13 @@ namespace RemindMeBot.Tests.Unit.Dialogs
 
             _stateService.UserSettingsPropertyAccessor
                 .GetAsync(Arg.Any<ITurnContext>(), Arg.Any<Func<UserSettings>>(), Arg.Any<CancellationToken>())
-                .Returns(new UserSettings());
+                .Returns(new UserSettings
+                {
+                    Culture = "Test culture",
+                    Language = "Test language",
+                    TimeZone = "Europe/London",
+                    Location = "Test Location"
+                });
 
             _clock.GetLocalDateTime(Arg.Any<string>())
                 .Returns(today);
@@ -244,7 +250,13 @@ namespace RemindMeBot.Tests.Unit.Dialogs
 
             _stateService.UserSettingsPropertyAccessor
                 .GetAsync(Arg.Any<ITurnContext>(), Arg.Any<Func<UserSettings>>(), Arg.Any<CancellationToken>())
-                .Returns(new UserSettings());
+                .Returns(new UserSettings
+                {
+                    Culture = "Test culture",
+                    Language = "Test language",
+                    TimeZone = "Europe/London",
+                    Location = "Test Location"
+                });
 
             _clock.GetLocalDateTime(Arg.Any<string>())
                 .Returns(today);
