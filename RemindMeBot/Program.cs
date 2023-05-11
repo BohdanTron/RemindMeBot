@@ -32,7 +32,11 @@ builder.Services.AddSingleton<ReminderTableService>();
 // Register Azure Storage Queues
 var reminderQueueClient = new QueueClient(
     builder.Configuration["AzureQueuesSettings:ConnectionString"],
-    builder.Configuration["AzureQueuesSettings:RemindersQueueName"]);
+    builder.Configuration["AzureQueuesSettings:RemindersQueueName"], 
+    new QueueClientOptions
+    {
+        MessageEncoding = QueueMessageEncoding.Base64
+    });
 
 builder.Services.AddSingleton(new ReminderQueueService(reminderQueueClient));
 
