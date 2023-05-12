@@ -1,9 +1,9 @@
-using Azure.Data.Tables;
 using Azure.Storage.Queues;
 using AzureMapsToolkit;
 using Microsoft.Bot.Builder;
 using Microsoft.Bot.Builder.Integration.AspNet.Core;
 using Microsoft.Bot.Connector.Authentication;
+using Microsoft.Extensions.Azure;
 using RemindMeBot;
 using RemindMeBot.Bots;
 using RemindMeBot.Dialogs;
@@ -18,27 +18,18 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddSingleton<IClock, Clock>();
 
-// Register Azure Table Storage
-var tableServiceClient =
-    new TableServiceClient(
-        new Uri(builder.Configuration["AzureTableStorageSettings:Endpoint"]),
-        new TableSharedKeyCredential(
-            builder.Configuration["AzureTableStorageSettings:AccountName"],
-            builder.Configuration["AzureTableStorageSettings:AccountKey"]));
+// Configure Azure Storage Clients
+builder.Services.AddAzureClients(azureBuilder =>
+{
+    azureBuilder.AddBlobServiceClient(builder.Configuration["StorageConnectionString:blob"]);
+    azureBuilder.AddTableServiceClient(builder.Configuration["StorageConnectionString"]);
 
-builder.Services.AddSingleton(tableServiceClient);
+    azureBuilder.AddQueueServiceClient(builder.Configuration["StorageConnectionString:queue"])
+        .ConfigureOptions(options => options.MessageEncoding = QueueMessageEncoding.Base64);
+});
+
 builder.Services.AddSingleton<ReminderTableService>();
-
-// Register Azure Storage Queues
-var reminderQueueClient = new QueueClient(
-    builder.Configuration["AzureQueuesSettings:ConnectionString"],
-    builder.Configuration["AzureQueuesSettings:RemindersQueueName"], 
-    new QueueClientOptions
-    {
-        MessageEncoding = QueueMessageEncoding.Base64
-    });
-
-builder.Services.AddSingleton(new ReminderQueueService(reminderQueueClient));
+builder.Services.AddSingleton<ReminderQueueService>();
 
 // Add localization
 builder.Services.AddLocalization();

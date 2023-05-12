@@ -16,8 +16,10 @@ namespace RemindMeBot.Services
     {
         private readonly QueueClient _queueClient;
 
-        public ReminderQueueService(QueueClient queueClient) =>
-            _queueClient = queueClient;
+        public ReminderQueueService(QueueServiceClient queueServiceClient)
+        {
+            _queueClient = queueServiceClient.GetQueueClient("reminders");
+        }
 
         public virtual async Task SendReminderCreatedMessage(string partitionKey, string rowKey, CancellationToken cancellationToken = new())
         {

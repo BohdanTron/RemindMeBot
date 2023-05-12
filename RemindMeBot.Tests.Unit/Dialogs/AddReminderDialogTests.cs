@@ -30,7 +30,7 @@ namespace RemindMeBot.Tests.Unit.Dialogs
         private readonly ITranslationService _translationService = Substitute.For<ITranslationService>();
         private readonly IClock _clock = Substitute.For<IClock>();
         private readonly ReminderTableService _reminderTableService = Substitute.ForPartsOf<ReminderTableService>(Substitute.For<TableServiceClient>());
-        private readonly ReminderQueueService _reminderQueueService = Substitute.ForPartsOf<ReminderQueueService>(Substitute.For<QueueClient>());
+        private readonly ReminderQueueService _reminderQueueService = Substitute.ForPartsOf<ReminderQueueService>(Substitute.For<QueueServiceClient>());
 
         public AddReminderDialogTests(ITestOutputHelper output) : base(output)
         {
