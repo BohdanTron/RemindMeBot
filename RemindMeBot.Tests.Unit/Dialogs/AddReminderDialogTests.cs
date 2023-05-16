@@ -109,11 +109,9 @@ namespace RemindMeBot.Tests.Unit.Dialogs
 
             result.PartitionKey.Should().Be(conversation.User.Id);
             result.Text.Should().Be(reminderText);
-            result.LocalDueDate.Should().Be(expectedReminderDateTimeOffset.ToString(CultureInfo.CurrentCulture));
-            result.ShouldRepeat.Should().BeTrue();
+            result.DueDateTimeLocal.Should().Be(expectedReminderDateTimeOffset.ToString(CultureInfo.CurrentCulture));
             result.RepeatInterval.Should().Be(repeatInterval);
             result.TimeZone.Should().Be(userSettings.TimeZone);
-            result.Culture.Should().Be(userSettings.Culture);
         }
 
         /// <summary>
@@ -182,7 +180,7 @@ namespace RemindMeBot.Tests.Unit.Dialogs
             var result = (ReminderEntity) testClient.DialogTurnResult.Result;
             result.PartitionKey.Should().Be(conversation.User.Id);
             result.Text.Should().Be(reminderText);
-            result.LocalDueDate.Should().Be(expectedReminderDateTimeOffset.ToString(CultureInfo.CurrentCulture));
+            result.DueDateTimeLocal.Should().Be(expectedReminderDateTimeOffset.ToString(CultureInfo.CurrentCulture));
             result.RepeatInterval.Should().BeNull();
         }
 
@@ -235,7 +233,7 @@ namespace RemindMeBot.Tests.Unit.Dialogs
             var result = (ReminderEntity) testClient.DialogTurnResult.Result;
             result.PartitionKey.Should().Be(conversation.User.Id);
             result.Text.Should().Be("Reminder text");
-            result.LocalDueDate.Should().Be(expectedReminderDateTimeOffset.ToString(CultureInfo.CurrentCulture));
+            result.DueDateTimeLocal.Should().Be(expectedReminderDateTimeOffset.ToString(CultureInfo.CurrentCulture));
             result.RepeatInterval.Should().BeNull();
         }
 

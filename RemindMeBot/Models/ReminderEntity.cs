@@ -11,11 +11,8 @@ namespace RemindMeBot.Models
         public ETag ETag { get; set; }
         
         public string Text { get; set; } = default!;
-        public string LocalDueDate { get; set; } = default!;
-        public DateTimeOffset CreationDateTimeUtc { get; set; }
+        public string DueDateTimeLocal { get; set; } = default!;
         public string TimeZone { get; set; } = default!;
-        public bool ShouldRepeat { get; set; }
         public string? RepeatInterval { get; set; }
-        public string Culture { get; set; } = default!;
     }
 }

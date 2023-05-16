@@ -9,7 +9,12 @@ Project("{E53339B2-1760-4266-BCC7-CA923CBCF16C}") = "docker-compose", "docker-co
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RemindMeBot.Tests.Unit", "RemindMeBot.Tests.Unit\RemindMeBot.Tests.Unit.csproj", "{92A8A983-3EBC-4783-8755-07907DBA35CF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReminderFunctions", "ReminderFunctions\ReminderFunctions.csproj", "{4058B73A-4855-4F9F-9C7A-7BAED20E9EB0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ReminderFunctions", "ReminderFunctions\ReminderFunctions.csproj", "{4058B73A-4855-4F9F-9C7A-7BAED20E9EB0}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{2CA8213B-AA0F-446F-A088-995A2EB2B4E5}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

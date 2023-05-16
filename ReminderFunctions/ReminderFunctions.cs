@@ -1,14 +1,34 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.Threading;
 using System.Threading.Tasks;
+using Azure;
+using Azure.Data.Tables;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using ReminderFunctions.Helpers;
+using ITableEntity = Azure.Data.Tables.ITableEntity;
 
 namespace ReminderFunctions
 {
+    public record ReminderEntity : ITableEntity
+    {
+        public string PartitionKey { get; set; } = default!;
+        public string RowKey { get; set; } = default!;
+        public DateTimeOffset? Timestamp { get; set; }
+        public ETag ETag { get; set; }
+
+        public string Text { get; set; } = default!;
+        public string DueDateTimeLocal { get; set; } = default!;
+        public string TimeZone { get; set; } = default!;
+        public string? RepeatInterval { get; set; }
+    }
+
     public record ReminderActionMessage(ActionType Action, string PartitionKey, string RowKey);
+
     public enum ActionType : byte
     {
         Created = 1,
@@ -43,15 +63,36 @@ namespace ReminderFunctions
             [OrchestrationTrigger] IDurableOrchestrationContext context,
             ILogger logger)
         {
-            var reminder = context.GetInput<ReminderActionMessage>();
+            var message = context.GetInput<ReminderActionMessage>();
 
-            // TODO: Schedule timer
+            var reminder = await context.CallActivityAsync<ReminderEntity>(nameof(GetReminder), message);
+
+            var reminderDateTimeLocal = DateTimeOffset.Parse(reminder.DueDateTimeLocal);
+
+            var reminderDateTimeUtc = reminderDateTimeLocal.ToDateTimeUtc(reminder.TimeZone);
+
+            await context.CreateTimer(reminderDateTimeUtc, CancellationToken.None);
+
+            // TODO: Send a proactive message
+
+            // Handle repeated event
+            if (reminder.RepeatInterval is null)
+            {
+                return true;
+            }
+
+            await context.CallActivityAsync(nameof(UpdateReminderDate), reminder);
+
+            await context.CallActivityAsync(nameof(PublishMessage),
+                new ReminderActionMessage(ActionType.Created, reminder.PartitionKey, reminder.RowKey));
+
+            // TODO: Add logging
 
             return true;
         }
 
         [FunctionName(nameof(UpdateReminder))]
-        public static async Task<bool> UpdateReminder(
+        public static Task<bool> UpdateReminder(
             [OrchestrationTrigger] IDurableOrchestrationContext context,
             ILogger logger)
         {
@@ -59,7 +100,7 @@ namespace ReminderFunctions
         }
 
         [FunctionName(nameof(DeleteReminder))]
-        public static async Task<bool> DeleteReminder(
+        public static Task<bool> DeleteReminder(
             [OrchestrationTrigger] IDurableOrchestrationContext context,
             ILogger logger)
         {
@@ -68,7 +109,7 @@ namespace ReminderFunctions
 
         [FunctionName(nameof(QueueStart))]
         public static async Task QueueStart(
-            [QueueTrigger("reminders", Connection = "ConnectionString")] string message,
+            [QueueTrigger("reminders", Connection = "AzureWebJobsStorage")] string message,
             [DurableClient] IDurableOrchestrationClient starter,
             ILogger logger)
         {
@@ -79,6 +120,43 @@ namespace ReminderFunctions
             var instanceId = await starter.StartNewAsync(nameof(RunOrchestrator), input: reminder);
 
             logger.LogInformation("Started orchestration with ID = '{instanceId}'.", instanceId);
+        }
+
+        [FunctionName(nameof(GetReminder))]
+        public static async Task<ReminderEntity> GetReminder([ActivityTrigger] ReminderActionMessage message, ILogger logger)
+        {
+            var tableClient = new TableClient(Environment.GetEnvironmentVariable("AzureWebJobsStorage"), "reminders");
+
+            var reminder = await tableClient.GetEntityAsync<ReminderEntity>(message.PartitionKey, message.RowKey);
+
+            return reminder;
+        }
+
+        [FunctionName(nameof(UpdateReminderDate))]
+        public static async Task UpdateReminderDate([ActivityTrigger] ReminderEntity reminder, ILogger logger)
+        {
+            var currentDateTime = DateTimeOffset.Parse(reminder.DueDateTimeLocal);
+
+            var nextDateTime = reminder.RepeatInterval!.ToLowerInvariant() switch
+            {
+                "daily" => currentDateTime.AddDays(1),
+                "weekly" => currentDateTime.AddDays(7),
+                "monthly" => currentDateTime.AddMonths(1),
+                "yearly" => currentDateTime.AddYears(1),
+                _ => throw new InvalidOperationException($"Unsupported repeat interval: {reminder.RepeatInterval}")
+            };
+            reminder.DueDateTimeLocal = nextDateTime.ToString(CultureInfo.CurrentCulture);
+
+            // Update reminder in Azure Table Storage
+            var tableClient = new TableClient(Environment.GetEnvironmentVariable("AzureWebJobsStorage"), "reminders");
+            await tableClient.UpdateEntityAsync(reminder, ETag.All, TableUpdateMode.Replace);
+        }
+
+        [FunctionName(nameof(PublishMessage))]
+        [return: Queue("reminders")]
+        public static string PublishMessage([ActivityTrigger] ReminderActionMessage message, ILogger logger)
+        {
+            return JsonConvert.SerializeObject(message);
         }
     }
 }

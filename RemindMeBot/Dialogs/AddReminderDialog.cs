@@ -182,12 +182,9 @@ namespace RemindMeBot.Dialogs
                 PartitionKey = conversation.User.Id,
                 RowKey = $"{conversation.Conversation.Id}_{Guid.NewGuid()}",
                 Text = text,
-                LocalDueDate = date.ToString(CultureInfo.CurrentCulture),
-                CreationDateTimeUtc = DateTimeOffset.UtcNow,
+                DueDateTimeLocal = date.ToString(CultureInfo.CurrentCulture),
                 RepeatInterval = repeatInterval,
-                ShouldRepeat = shouldRepeat,
-                TimeZone = userSettings.TimeZone!,
-                Culture = CultureInfo.CurrentCulture.Name
+                TimeZone = userSettings.TimeZone!
             };
 
             await _reminderTableService.AddReminder(reminder, cancellationToken);
