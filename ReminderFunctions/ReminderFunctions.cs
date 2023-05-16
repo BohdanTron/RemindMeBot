@@ -64,11 +64,9 @@ namespace ReminderFunctions
             ILogger logger)
         {
             var message = context.GetInput<ReminderActionMessage>();
-
             var reminder = await context.CallActivityAsync<ReminderEntity>(nameof(GetReminder), message);
 
             var reminderDateTimeLocal = DateTimeOffset.Parse(reminder.DueDateTimeLocal);
-
             var reminderDateTimeUtc = reminderDateTimeLocal.ToDateTimeUtc(reminder.TimeZone);
 
             await context.CreateTimer(reminderDateTimeUtc, CancellationToken.None);
@@ -109,7 +107,7 @@ namespace ReminderFunctions
 
         [FunctionName(nameof(QueueStart))]
         public static async Task QueueStart(
-            [QueueTrigger("reminders", Connection = "AzureWebJobsStorage")] string message,
+            [QueueTrigger("reminders")] string message,
             [DurableClient] IDurableOrchestrationClient starter,
             ILogger logger)
         {
@@ -123,17 +121,21 @@ namespace ReminderFunctions
         }
 
         [FunctionName(nameof(GetReminder))]
-        public static async Task<ReminderEntity> GetReminder([ActivityTrigger] ReminderActionMessage message, ILogger logger)
+        public static async Task<ReminderEntity> GetReminder(
+            [ActivityTrigger] ReminderActionMessage message,
+            [Table("reminders")] TableClient tableClient,
+            ILogger logger)
         {
-            var tableClient = new TableClient(Environment.GetEnvironmentVariable("AzureWebJobsStorage"), "reminders");
-
             var reminder = await tableClient.GetEntityAsync<ReminderEntity>(message.PartitionKey, message.RowKey);
 
             return reminder;
         }
 
         [FunctionName(nameof(UpdateReminderDate))]
-        public static async Task UpdateReminderDate([ActivityTrigger] ReminderEntity reminder, ILogger logger)
+        public static async Task UpdateReminderDate(
+            [ActivityTrigger] ReminderEntity reminder,
+            [Table("reminders")] TableClient tableClient,
+            ILogger logger)
         {
             var currentDateTime = DateTimeOffset.Parse(reminder.DueDateTimeLocal);
 
@@ -147,8 +149,6 @@ namespace ReminderFunctions
             };
             reminder.DueDateTimeLocal = nextDateTime.ToString(CultureInfo.CurrentCulture);
 
-            // Update reminder in Azure Table Storage
-            var tableClient = new TableClient(Environment.GetEnvironmentVariable("AzureWebJobsStorage"), "reminders");
             await tableClient.UpdateEntityAsync(reminder, ETag.All, TableUpdateMode.Replace);
         }
 
