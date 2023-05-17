@@ -14,5 +14,6 @@ namespace RemindMeBot.Models
         public string DueDateTimeLocal { get; set; } = default!;
         public string TimeZone { get; set; } = default!;
         public string? RepeatInterval { get; set; }
+        public string ConversationReference { get; set; } = default!;
     }
 }

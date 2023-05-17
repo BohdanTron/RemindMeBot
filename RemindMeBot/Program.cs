@@ -3,7 +3,9 @@ using AzureMapsToolkit;
 using Microsoft.Bot.Builder;
 using Microsoft.Bot.Builder.Integration.AspNet.Core;
 using Microsoft.Bot.Connector.Authentication;
+using Microsoft.Bot.Schema;
 using Microsoft.Extensions.Azure;
+using Newtonsoft.Json;
 using RemindMeBot;
 using RemindMeBot.Bots;
 using RemindMeBot.Dialogs;
@@ -74,7 +76,25 @@ app.UseSwaggerUI();
 
 app.UseHttpsRedirection();
 
-app.MapPost("api/messages", (IBotFrameworkHttpAdapter adapter, IBot bot, HttpContext context) =>
-    adapter.ProcessAsync(context.Request, context.Response, bot));
+app.MapPost("api/messages", (IBotFrameworkHttpAdapter adapter, IBot bot, HttpContext context, CancellationToken cancellationToken) =>
+    adapter.ProcessAsync(context.Request, context.Response, bot, cancellationToken));
+
+app.MapGet("api/proactive-message/{partitionKey}/{rowKey}",
+    async (string partitionKey, string rowKey, IBotFrameworkHttpAdapter adapter, ReminderTableService tableService, CancellationToken cancellationToken) =>
+    {
+        var reminder = await tableService.GetReminder(partitionKey, rowKey, cancellationToken);
+
+        if (reminder is null) return Results.NotFound();
+
+        var conversation = JsonConvert.DeserializeObject<ConversationReference>(reminder.ConversationReference);
+
+        var appId = builder.Configuration["MicrosoftAppId"] ?? string.Empty;
+
+        await ((BotAdapter) adapter).ContinueConversationAsync(appId, conversation,
+            (context, token) =>
+                context.SendActivityAsync(reminder.Text, cancellationToken: token), cancellationToken);
+
+        return Results.Ok();
+    });
 
 app.Run();

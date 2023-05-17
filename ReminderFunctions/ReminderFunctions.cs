@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Azure;
@@ -10,6 +11,7 @@ using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using ReminderFunctions.Helpers;
+using HttpMethod = System.Net.Http.HttpMethod;
 using ITableEntity = Azure.Data.Tables.ITableEntity;
 
 namespace ReminderFunctions
@@ -25,6 +27,7 @@ namespace ReminderFunctions
         public string DueDateTimeLocal { get; set; } = default!;
         public string TimeZone { get; set; } = default!;
         public string? RepeatInterval { get; set; }
+        public string ConversationReference { get; set; } = default!;
     }
 
     public record ReminderActionMessage(ActionType Action, string PartitionKey, string RowKey);
@@ -71,9 +74,21 @@ namespace ReminderFunctions
 
             await context.CreateTimer(reminderDateTimeUtc, CancellationToken.None);
 
-            // TODO: Send a proactive message
+            var baseAddress = Environment.GetEnvironmentVariable("BotBaseAddress");
+            var url = new Uri($"{baseAddress}/api/proactive-message/{reminder.PartitionKey}/{reminder.RowKey}");
 
-            // Handle repeated event
+            logger.LogInformation($"Calling the proactive message endpoint, the URL is {url}");
+            try
+            {
+                await context.CallHttpAsync(HttpMethod.Get, url,
+                    retryOptions: new HttpRetryOptions(TimeSpan.FromMinutes(1), 5));
+            }
+            catch (HttpRequestException ex)
+            {
+                logger.LogError(ex, "HTTP request to the proactive message endpoint failed");
+            }
+
+
             if (reminder.RepeatInterval is null)
             {
                 return true;
@@ -83,8 +98,6 @@ namespace ReminderFunctions
 
             await context.CallActivityAsync(nameof(PublishMessage),
                 new ReminderActionMessage(ActionType.Created, reminder.PartitionKey, reminder.RowKey));
-
-            // TODO: Add logging
 
             return true;
         }
@@ -111,7 +124,7 @@ namespace ReminderFunctions
             [DurableClient] IDurableOrchestrationClient starter,
             ILogger logger)
         {
-            logger.LogInformation($"Queue trigger function processed: {message}");
+            logger.LogInformation($"Message from queue retrieved: {message}");
 
             var reminder = JsonConvert.DeserializeObject<ReminderActionMessage>(message);
 
@@ -123,8 +136,7 @@ namespace ReminderFunctions
         [FunctionName(nameof(GetReminder))]
         public static async Task<ReminderEntity> GetReminder(
             [ActivityTrigger] ReminderActionMessage message,
-            [Table("reminders")] TableClient tableClient,
-            ILogger logger)
+            [Table("reminders")] TableClient tableClient)
         {
             var reminder = await tableClient.GetEntityAsync<ReminderEntity>(message.PartitionKey, message.RowKey);
 
@@ -149,12 +161,14 @@ namespace ReminderFunctions
             };
             reminder.DueDateTimeLocal = nextDateTime.ToString(CultureInfo.CurrentCulture);
 
+            logger.LogInformation($"Updating reminders with PartitionKey = {reminder.PartitionKey}, Row Key = {reminder.RowKey}, the new date = {reminder.DueDateTimeLocal}");
+
             await tableClient.UpdateEntityAsync(reminder, ETag.All, TableUpdateMode.Replace);
         }
 
         [FunctionName(nameof(PublishMessage))]
         [return: Queue("reminders")]
-        public static string PublishMessage([ActivityTrigger] ReminderActionMessage message, ILogger logger)
+        public static string PublishMessage([ActivityTrigger] ReminderActionMessage message)
         {
             return JsonConvert.SerializeObject(message);
         }

@@ -3,6 +3,7 @@ using Microsoft.Bot.Builder;
 using Microsoft.Bot.Builder.Dialogs;
 using Microsoft.Bot.Builder.Dialogs.Choices;
 using Microsoft.Extensions.Localization;
+using Newtonsoft.Json;
 using RemindMeBot.Models;
 using RemindMeBot.Resources;
 using RemindMeBot.Services;
@@ -184,7 +185,8 @@ namespace RemindMeBot.Dialogs
                 Text = text,
                 DueDateTimeLocal = date.ToString(CultureInfo.CurrentCulture),
                 RepeatInterval = repeatInterval,
-                TimeZone = userSettings.TimeZone!
+                TimeZone = userSettings.TimeZone!,
+                ConversationReference = JsonConvert.SerializeObject(conversation)
             };
 
             await _reminderTableService.AddReminder(reminder, cancellationToken);

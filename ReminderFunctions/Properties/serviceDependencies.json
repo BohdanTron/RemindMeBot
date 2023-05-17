@@ -5,7 +5,7 @@
     },
     "storage2": {
       "type": "storage",
-      "connectionId": "ConnectionString",
+      "connectionId": "AzureWebJobsStorage",
       "dynamicId": null
     },
     "appInsights1": {
