@@ -183,18 +183,19 @@ namespace RemindMeBot.Dialogs
                 PartitionKey = conversation.User.Id,
                 RowKey = $"{conversation.Conversation.Id}_{Guid.NewGuid()}",
                 Text = text,
-                DueDateTimeLocal = date.ToString(CultureInfo.CurrentCulture),
+                DueDateTimeLocal = date.ToString("G", CultureInfo.InvariantCulture),
                 RepeatInterval = repeatInterval,
                 TimeZone = userSettings.TimeZone!,
                 ConversationReference = JsonConvert.SerializeObject(conversation)
             };
 
-            await _reminderTableService.AddReminder(reminder, cancellationToken);
-            await _reminderQueueService.SendReminderCreatedMessage(reminder.PartitionKey, reminder.RowKey, cancellationToken);
+            await _reminderTableService.Add(reminder, cancellationToken);
+            await _reminderQueueService.PublishCreatedMessage(reminder.PartitionKey, reminder.RowKey, cancellationToken);
 
+            var displayDate = date.ToString("g", CultureInfo.CurrentCulture);
             var reminderAddedMsg = shouldRepeat
-                ? _localizer[ResourceKeys.RepeatedReminderAdded, text, date, repeatInterval!]
-                : _localizer[ResourceKeys.ReminderAdded, text, date];
+                ? _localizer[ResourceKeys.RepeatedReminderAdded, text, displayDate, repeatInterval!]
+                : _localizer[ResourceKeys.ReminderAdded, text, displayDate];
 
             await stepContext.Context.SendActivityAsync(MessageFactory.Text(reminderAddedMsg, reminderAddedMsg), cancellationToken);
 

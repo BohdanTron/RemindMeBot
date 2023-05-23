@@ -203,4 +203,10 @@
   <data name="UnexpectedError" xml:space="preserve">
     <value>Oops, something went wrong. Please try again later.</value>
   </data>
+  <data name="RemindersList" xml:space="preserve">
+    <value>Here's the list of your reminders\. To delete a reminder, press the corresponding button below:</value>
+  </data>
+  <data name="NoRemindersCreated" xml:space="preserve">
+    <value>You don't have any reminders so far</value>
+  </data>
 </root>

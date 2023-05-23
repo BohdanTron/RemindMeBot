@@ -8,34 +8,24 @@ namespace RemindMeBot.Services
     public enum ActionType : byte
     {
         Created = 1,
-        Updated = 2,
-        Deleted = 3
+        Deleted = 2
     }
 
     public class ReminderQueueService
     {
         private readonly QueueClient _queueClient;
 
-        public ReminderQueueService(QueueServiceClient queueServiceClient)
-        {
+        public ReminderQueueService(QueueServiceClient queueServiceClient) => 
             _queueClient = queueServiceClient.GetQueueClient("reminders");
-        }
 
-        public virtual async Task SendReminderCreatedMessage(string partitionKey, string rowKey, CancellationToken cancellationToken = new())
+        public virtual async Task PublishCreatedMessage(string partitionKey, string rowKey, CancellationToken cancellationToken = new())
         {
             var message = new ReminderActionMessage(ActionType.Created, partitionKey, rowKey);
 
             await _queueClient.SendMessageAsync(JsonConvert.SerializeObject(message), cancellationToken);
         }
 
-        public virtual async Task SendReminderUpdatedMessage(string partitionKey, string rowKey, CancellationToken cancellationToken = new())
-        {
-            var message = new ReminderActionMessage(ActionType.Updated, partitionKey, rowKey);
-
-            await _queueClient.SendMessageAsync(JsonConvert.SerializeObject(message), cancellationToken);
-        }
-
-        public virtual async Task SendReminderDeletedMessage(string partitionKey, string rowKey, CancellationToken cancellationToken = new())
+        public virtual async Task PublishDeletedMessage(string partitionKey, string rowKey, CancellationToken cancellationToken = new())
         {
             var message = new ReminderActionMessage(ActionType.Deleted, partitionKey, rowKey);
 

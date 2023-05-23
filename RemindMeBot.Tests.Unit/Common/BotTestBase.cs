@@ -37,6 +37,15 @@ namespace RemindMeBot.Tests.Unit.Common
         {
             CultureInfo.CurrentCulture = new CultureInfo(culture);
             CultureInfo.CurrentUICulture = new CultureInfo(culture);
+
+            CultureInfo.CurrentCulture.DateTimeFormat.DateSeparator = "/";
+            CultureInfo.CurrentUICulture.DateTimeFormat.DateSeparator = "/";
+
+            CultureInfo.CurrentCulture.DateTimeFormat.ShortDatePattern =
+                CultureInfo.CurrentCulture.DateTimeFormat.ShortDatePattern.Replace(".", "/");
+
+            CultureInfo.CurrentUICulture.DateTimeFormat.ShortDatePattern =
+                CultureInfo.CurrentCulture.DateTimeFormat.ShortDatePattern.Replace(".", "/");
         }
 
         private void SetupLocalizer()

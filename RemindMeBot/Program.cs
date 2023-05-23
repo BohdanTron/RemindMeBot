@@ -11,6 +11,7 @@ using RemindMeBot.Bots;
 using RemindMeBot.Dialogs;
 using RemindMeBot.Middlewares;
 using RemindMeBot.Services;
+using Telegram.Bot;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -32,6 +33,9 @@ builder.Services.AddAzureClients(azureBuilder =>
 
 builder.Services.AddSingleton<ReminderTableService>();
 builder.Services.AddSingleton<ReminderQueueService>();
+
+// Add Telegram Bot Client
+builder.Services.AddSingleton(new TelegramBotClient(builder.Configuration["TelegramBotToken"]));
 
 // Add localization
 builder.Services.AddLocalization();
@@ -66,6 +70,7 @@ builder.Services.AddSingleton<IStateService, StateService>();
 builder.Services.AddSingleton<UserSettingsDialog>();
 builder.Services.AddSingleton<ChangeUserSettingsDialog>();
 builder.Services.AddSingleton<AddReminderDialog>();
+builder.Services.AddSingleton<RemindersListDialog>();
 builder.Services.AddSingleton<MainDialog>();
 builder.Services.AddTransient<IBot, MainBot<MainDialog>>();
 
@@ -74,7 +79,7 @@ var app = builder.Build();
 app.UseSwagger();
 app.UseSwaggerUI();
 
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 
 app.MapPost("api/messages", (IBotFrameworkHttpAdapter adapter, IBot bot, HttpContext context, CancellationToken cancellationToken) =>
     adapter.ProcessAsync(context.Request, context.Response, bot, cancellationToken));
@@ -82,7 +87,7 @@ app.MapPost("api/messages", (IBotFrameworkHttpAdapter adapter, IBot bot, HttpCon
 app.MapGet("api/proactive-message/{partitionKey}/{rowKey}",
     async (string partitionKey, string rowKey, IBotFrameworkHttpAdapter adapter, ReminderTableService tableService, CancellationToken cancellationToken) =>
     {
-        var reminder = await tableService.GetReminder(partitionKey, rowKey, cancellationToken);
+        var reminder = await tableService.Get(partitionKey, rowKey, cancellationToken);
 
         if (reminder is null) return Results.NotFound();
 

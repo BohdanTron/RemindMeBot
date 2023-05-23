@@ -12,17 +12,38 @@ namespace RemindMeBot.Services
             _tableClient = tableServiceClient.GetTableClient("reminders");
         }
 
-        public virtual async Task AddReminder(ReminderEntity reminder, CancellationToken cancellationToken = new())
-        {
-            await _tableClient.AddEntityAsync(reminder, cancellationToken);
-        }
-
-        public virtual async Task<ReminderEntity?> GetReminder(string partitionKey, string rowKey, CancellationToken cancellationToken = new())
+        public virtual async Task<ReminderEntity?> Get(string partitionKey, string rowKey, CancellationToken cancellationToken = new())
         {
             var reminder =
                 await _tableClient.GetEntityIfExistsAsync<ReminderEntity>(partitionKey, rowKey, cancellationToken: cancellationToken);
 
-            return reminder.Value;
+            return reminder.HasValue ? reminder.Value : null;
+        }
+
+        public virtual async Task<List<ReminderEntity>> GetList(string partitionKey, CancellationToken cancellationToken = new())
+        {
+            var queryResults = _tableClient
+                .QueryAsync<ReminderEntity>(e => e.PartitionKey == partitionKey, cancellationToken: cancellationToken);
+
+            var reminders = new List<ReminderEntity>();
+            await foreach (var result in queryResults)
+            {
+                reminders.Add(result);
+            }
+
+            return reminders;
+        }
+
+        public virtual async Task Add(ReminderEntity reminder, CancellationToken cancellationToken = new())
+        {
+            // TODO: Add error handling
+            await _tableClient.AddEntityAsync(reminder, cancellationToken);
+        }
+
+        public virtual async Task Delete(string partitionKey, string rowKey, CancellationToken cancellationToken = new())
+        {
+            // TODO: Add error handling
+            await _tableClient.DeleteEntityAsync(partitionKey, rowKey, cancellationToken: cancellationToken);
         }
     }
 }

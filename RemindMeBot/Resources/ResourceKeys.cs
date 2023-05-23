@@ -29,5 +29,7 @@
         public const string Monthly = nameof(Monthly);
         public const string Yearly = nameof(Yearly);
         public const string UnexpectedError = nameof(UnexpectedError);
+        public const string RemindersList = nameof(RemindersList);
+        public const string NoRemindersCreated = nameof(NoRemindersCreated);
     }
 }

@@ -203,4 +203,10 @@
   <data name="UnexpectedError" xml:space="preserve">
     <value>Ой, щось пішло не так. Будь ласка, спробуйте знову пізніше.</value>
   </data>
+  <data name="RemindersList" xml:space="preserve">
+    <value>Ваш список нагадувань\. Для того щоб видалити нагадування, натисніть на відповідну кнопку нижче:</value>
+  </data>
+  <data name="NoRemindersCreated" xml:space="preserve">
+    <value>Наразі у вас нема жодного нагадування</value>
+  </data>
 </root>

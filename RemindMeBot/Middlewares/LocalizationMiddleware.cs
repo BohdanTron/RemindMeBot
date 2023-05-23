@@ -27,6 +27,15 @@ namespace RemindMeBot.Middlewares
             CultureInfo.CurrentCulture = cultureInfo;
             CultureInfo.CurrentUICulture = cultureInfo;
 
+            CultureInfo.CurrentCulture.DateTimeFormat.DateSeparator = "/";
+            CultureInfo.CurrentUICulture.DateTimeFormat.DateSeparator = "/";
+
+            CultureInfo.CurrentCulture.DateTimeFormat.ShortDatePattern =
+                CultureInfo.CurrentCulture.DateTimeFormat.ShortDatePattern.Replace(".", "/");
+
+            CultureInfo.CurrentUICulture.DateTimeFormat.ShortDatePattern =
+                CultureInfo.CurrentCulture.DateTimeFormat.ShortDatePattern.Replace(".", "/");
+
             turnContext.Activity.Locale = cultureInfo.Name;
 
             turnContext.Activity.LocalTimezone = userSettings.TimeZone ?? turnContext.Activity.LocalTimezone;
