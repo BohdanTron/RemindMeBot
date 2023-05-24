@@ -93,10 +93,15 @@ namespace RemindMeBot.Dialogs
             }
         }
 
-        private static async Task<DialogTurnResult> ProcessResultStep(WaterfallStepContext stepContext, CancellationToken cancellationToken)
+        private async Task<DialogTurnResult> ProcessResultStep(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
             if (stepContext.Result is RemindersListDialogResult { ItemDeleted: false })
             {
+                if (stepContext.Context.Activity.Text.StartsWith("/"))
+                {
+                    return await stepContext.ReplaceDialogAsync(Id, cancellationToken: cancellationToken);
+                }
+
                 await stepContext.Context.SendActivityAsync(MessageFactory.Text("What to remind you about?"), cancellationToken);
             }
 

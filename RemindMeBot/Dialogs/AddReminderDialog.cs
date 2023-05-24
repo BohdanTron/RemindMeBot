@@ -181,7 +181,7 @@ namespace RemindMeBot.Dialogs
             var reminder = new ReminderEntity
             {
                 PartitionKey = conversation.User.Id,
-                RowKey = $"{conversation.Conversation.Id}_{Guid.NewGuid()}",
+                RowKey = Guid.NewGuid().ToString(),
                 Text = text,
                 DueDateTimeLocal = date.ToString("G", CultureInfo.InvariantCulture),
                 RepeatInterval = repeatInterval,

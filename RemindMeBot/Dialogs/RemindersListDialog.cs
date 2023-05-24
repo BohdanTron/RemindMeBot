@@ -82,9 +82,18 @@ namespace RemindMeBot.Dialogs
         {
             var conversation = stepContext.Context.Activity.GetConversationReference();
 
+            var partitionKey = conversation.User.Id;
             var rowKey = stepContext.Context.Activity.Text;
 
-            var reminder = await _reminderTableService.Get(conversation.User.Id, rowKey, cancellationToken);
+            if (!Guid.TryParse(rowKey, out _))
+            {
+                return await stepContext.EndDialogAsync(new RemindersListDialogResult
+                {
+                    ItemDeleted = false
+                }, cancellationToken: cancellationToken);
+            }
+
+            var reminder = await _reminderTableService.Get(partitionKey, rowKey, cancellationToken);
             if (reminder is null)
             {
                 return await stepContext.EndDialogAsync(new RemindersListDialogResult
@@ -93,8 +102,8 @@ namespace RemindMeBot.Dialogs
                 }, cancellationToken: cancellationToken);
             }
 
-            await _reminderTableService.Delete(conversation.User.Id, rowKey, cancellationToken);
-            await _reminderQueueService.PublishDeletedMessage(conversation.User.Id, rowKey, cancellationToken);
+            await _reminderTableService.Delete(partitionKey, rowKey, cancellationToken);
+            await _reminderQueueService.PublishDeletedMessage(partitionKey, rowKey, cancellationToken);
 
             await stepContext.Context.SendActivityAsync("Reminder was deleted", cancellationToken: cancellationToken);
 
