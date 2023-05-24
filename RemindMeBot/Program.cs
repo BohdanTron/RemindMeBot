@@ -36,6 +36,7 @@ builder.Services.AddSingleton<ReminderQueueService>();
 
 // Add Telegram Bot Client
 builder.Services.AddSingleton(new TelegramBotClient(builder.Configuration["TelegramBotToken"]));
+builder.Services.AddSingleton<TelegramMiddleware>();
 
 // Add localization
 builder.Services.AddLocalization();

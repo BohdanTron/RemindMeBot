@@ -124,7 +124,7 @@
     <value>Please enter your city and country (e.g London, United Kingdom)</value>
   </data>
   <data name="AskForReminderDate" xml:space="preserve">
-    <value>When should I remind you? (Please provide the date and time)</value>
+    <value>When should I remind you?</value>
   </data>
   <data name="AskForReminderText" xml:space="preserve">
     <value>Please enter the title of the reminder</value>
@@ -148,7 +148,7 @@
     <value>There are no active operations to cancel</value>
   </data>
   <data name="NoUserSettings" xml:space="preserve">
-    <value>You haven't set your preferences yet. Please use the **/start** command to set up your settings first</value>
+    <value>You haven't set your preferences yet. Please use the */start* command to set up your settings first</value>
   </data>
   <data name="OperationCancelled" xml:space="preserve">
     <value>The current operation has been cancelled</value>
@@ -157,7 +157,7 @@
     <value>Please choose an option from the list:</value>
   </data>
   <data name="RepeatedReminderAdded" xml:space="preserve">
-    <value>Reminder added: **\"{0}\"** on **{1}**, repeating **{2}**</value>
+    <value>Reminder added: *"{0}"* on *{1}*, repeating *{2}*</value>
   </data>
   <data name="UnknownCommand" xml:space="preserve">
     <value>Unknown command. Please enter a valid command</value>
@@ -165,16 +165,16 @@
   <data name="UserCurrentSettings" xml:space="preserve">
     <value>Your current settings: 
 
-- language - **{0}**
-- location - **{1}**
-- timezone - **{2}**
-- local time - **{3}**</value>
+- language - *{0}*
+- location - *{1}*
+- timezone - *{2}*
+- local time - *{3}*</value>
   </data>
   <data name="UserSettingsHaveBeenChanged" xml:space="preserve">
     <value>Your settings have been changed!</value>
   </data>
   <data name="AskWhetherToRepeatReminder" xml:space="preserve">
-    <value>Do you want this reminder to repeat? (yes/no)</value>
+    <value>Do you want this reminder to repeat?</value>
   </data>
   <data name="Yes" xml:space="preserve">
     <value>yes</value>
@@ -183,7 +183,7 @@
     <value>no</value>
   </data>
   <data name="AskForRepeatInterval" xml:space="preserve">
-    <value>How often should it repeat? (daily/weekly/monthly/yearly)</value>
+    <value>How often should it repeat?</value>
   </data>
   <data name="Daily" xml:space="preserve">
     <value>daily</value>
@@ -198,13 +198,13 @@
     <value>yearly</value>
   </data>
   <data name="ReminderAdded" xml:space="preserve">
-    <value>Reminder added: **\"{0}\"** on **{1}**</value>
+    <value>Reminder added: *"{0}"* on *{1}*</value>
   </data>
   <data name="UnexpectedError" xml:space="preserve">
-    <value>Oops, something went wrong. Please try again later.</value>
+    <value>Oops, something went wrong. Please try again later</value>
   </data>
   <data name="RemindersList" xml:space="preserve">
-    <value>Here's the list of your reminders\. To delete a reminder, press the corresponding button below:</value>
+    <value>Here's the list of your reminders. If you want to delete a reminder, press the corresponding button below:</value>
   </data>
   <data name="NoRemindersCreated" xml:space="preserve">
     <value>You don't have any reminders so far</value>

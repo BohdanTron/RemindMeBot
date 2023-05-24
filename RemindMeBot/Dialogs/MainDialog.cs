@@ -75,8 +75,7 @@ namespace RemindMeBot.Dialogs
                     return await stepContext.BeginDialogAsync(_addReminderDialog.Id, cancellationToken: cancellationToken);
 
                 case "/list":
-                    var result = await stepContext.BeginDialogAsync(_remindersListDialog.Id, cancellationToken: cancellationToken);
-                    return result;
+                    return await stepContext.BeginDialogAsync(_remindersListDialog.Id, cancellationToken: cancellationToken);
 
                 case "/cancel":
                     var noActiveOperations = _localizer[ResourceKeys.NoActiveOperations];

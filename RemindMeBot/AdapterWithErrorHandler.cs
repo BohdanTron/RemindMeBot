@@ -13,12 +13,14 @@ public class AdapterWithErrorHandler : CloudAdapter
     public AdapterWithErrorHandler(
         BotFrameworkAuthentication auth,
         LocalizationMiddleware localizationMiddleware,
+        TelegramMiddleware telegramMiddleware,
         ConversationState? conversationState,
         IStringLocalizer<BotMessages> localizer,
         ILogger<IBotFrameworkHttpAdapter> logger) : base(auth, logger)
 
     {
         Use(localizationMiddleware);
+        Use(telegramMiddleware);
 
         OnTurnError = async (turnContext, exception) =>
         {

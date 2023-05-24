@@ -124,7 +124,7 @@
     <value>Будь ласка вкажіть ваше місцезнаходження (наприклад Київ, Україна)</value>
   </data>
   <data name="AskForReminderDate" xml:space="preserve">
-    <value>Коли я маю нагадати про це? (Будь ласка введіть дату та час)</value>
+    <value>Коли я маю нагадати про це?</value>
   </data>
   <data name="AskForReminderText" xml:space="preserve">
     <value>Будь ласка введіть текст для нагадування</value>
@@ -157,7 +157,7 @@
     <value>Будь ласка виберіть опцію зі списку:</value>
   </data>
   <data name="ReminderAdded" xml:space="preserve">
-    <value>Нагадування додано: **\"{0}\"** на **{1}**</value>
+    <value>Нагадування додано: *"{0}"* на *{1}*</value>
   </data>
   <data name="UnknownCommand" xml:space="preserve">
     <value>Невідома команда. Будь ласка введіть коректну команду</value>
@@ -165,16 +165,16 @@
   <data name="UserCurrentSettings" xml:space="preserve">
     <value>Ваші поточні налаштування:
 
-- мова - **{0}**
-- місцезнаходження - **{1}**
-- часова пояс - **{2}**
-- місцевий час - **{3}**</value>
+- мова - *{0}*
+- місцезнаходження - *{1}*
+- часова пояс - *{2}*
+- місцевий час - *{3}*</value>
   </data>
   <data name="UserSettingsHaveBeenChanged" xml:space="preserve">
     <value>Ваші налаштування були змінені!</value>
   </data>
   <data name="AskWhetherToRepeatReminder" xml:space="preserve">
-    <value>Чи бажаєте повторювати нагадування? (так/ні)</value>
+    <value>Чи бажаєте повторювати нагадування?</value>
   </data>
   <data name="Yes" xml:space="preserve">
     <value>так</value>
@@ -183,7 +183,7 @@
     <value>ні</value>
   </data>
   <data name="AskForRepeatInterval" xml:space="preserve">
-    <value>Як часто повторювати? (щодня/щотижня/щомісяця/щорічно)</value>
+    <value>Як часто це нагадування має повторюватись?</value>
   </data>
   <data name="Daily" xml:space="preserve">
     <value>щодня</value>
@@ -198,13 +198,13 @@
     <value>щорічно</value>
   </data>
   <data name="RepeatedReminderAdded" xml:space="preserve">
-    <value>Нагадування додано: **\"{0}\"** на **{1}**, повторюється **{2}**</value>
+    <value>Нагадування додано: *"{0}"* на *{1}*, повторюється *{2}*</value>
   </data>
   <data name="UnexpectedError" xml:space="preserve">
-    <value>Ой, щось пішло не так. Будь ласка, спробуйте знову пізніше.</value>
+    <value>Ой, щось пішло не так. Будь ласка, спробуйте знову пізніше</value>
   </data>
   <data name="RemindersList" xml:space="preserve">
-    <value>Ваш список нагадувань\. Для того щоб видалити нагадування, натисніть на відповідну кнопку нижче:</value>
+    <value>Ваш список нагадувань. Для того щоб видалити нагадування, натисніть на відповідну кнопку нижче:</value>
   </data>
   <data name="NoRemindersCreated" xml:space="preserve">
     <value>Наразі у вас нема жодного нагадування</value>

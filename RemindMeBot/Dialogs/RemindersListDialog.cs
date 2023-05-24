@@ -1,15 +1,11 @@
 ﻿using System.Globalization;
-using AdaptiveCards;
 using Microsoft.Bot.Builder;
 using Microsoft.Bot.Builder.Dialogs;
 using Microsoft.Bot.Schema;
 using Microsoft.Extensions.Localization;
-using RemindMeBot.Models;
 using RemindMeBot.Resources;
 using RemindMeBot.Services;
 using Telegram.Bot;
-using Telegram.Bot.Types.Enums;
-using Telegram.Bot.Types.ReplyMarkups;
 
 namespace RemindMeBot.Dialogs
 {
@@ -59,38 +55,29 @@ namespace RemindMeBot.Dialogs
                 return await stepContext.EndDialogAsync(cancellationToken: cancellationToken);
             }
 
-            if (conversation.ChannelId != "telegram")
-            {
-                var card = BuildAdaptiveCard(reminders);
-                var msg = MessageFactory.Attachment(new List<Attachment>
-                    { new() { ContentType = AdaptiveCard.ContentType, Content = card } });
-
-                await stepContext.Context.SendActivityAsync(msg, cancellationToken);
-
-                return new DialogTurnResult(DialogTurnStatus.Waiting);
-            }
-
             var reminderList = string.Join("\n",
                 reminders.Select((reminder, index) =>
                 {
                     var date = DateTime.ParseExact(reminder.DueDateTimeLocal, "G", CultureInfo.InvariantCulture, DateTimeStyles.None);
 
-                    return $"{index + 1}\\) *{reminder.Text}* \n📅  {date.ToString("g", CultureInfo.CurrentCulture)}\n";
+                    return $"{index + 1}) *{reminder.Text}* \n📅  {date.ToString("g", CultureInfo.CurrentCulture)}\n";
                 }));
 
-            var reminderButtons = reminders
-                .Select((reminder, index) => new { Index = index, Reminder = reminder })
-                .GroupBy(x => x.Index / 5)
-                .Select(g => g.Select(x => InlineKeyboardButton.WithCallbackData($"🗑️ {x.Index + 1}", x.Reminder.RowKey)))
-                .ToArray();
+            var reminderListMsg = $"{_localizer[ResourceKeys.RemindersList]}\n\n{reminderList}";
 
-            var reply = _localizer[ResourceKeys.RemindersList];
-            await _telegramBotClient.SendTextMessageAsync(
-                chatId: conversation.Conversation.Id,
-                text: $"{reply}\n\n{reminderList}",
-                parseMode: ParseMode.MarkdownV2,
-                replyMarkup: new InlineKeyboardMarkup(reminderButtons),
-                cancellationToken: cancellationToken);
+            var reply = MessageFactory.Text(reminderListMsg, reminderListMsg);
+            reply.SuggestedActions = new SuggestedActions
+            {
+                Actions = reminders
+                    .Select((item, index) => new CardAction
+                    {
+                        Title = $"🗑️ {index + 1}",
+                        Type = ActionTypes.ImBack,
+                        Value = item.RowKey
+                    }).ToList()
+            };
+
+            await stepContext.Context.SendActivityAsync(reply, cancellationToken);
 
             return new DialogTurnResult(DialogTurnStatus.Waiting);
         }
@@ -116,29 +103,6 @@ namespace RemindMeBot.Dialogs
             await stepContext.Context.SendActivityAsync("Reminder was deleted", cancellationToken: cancellationToken);
 
             return await stepContext.ReplaceDialogAsync(Id, cancellationToken: cancellationToken);
-        }
-
-        private AdaptiveCard BuildAdaptiveCard(List<ReminderEntity> reminders)
-        {
-            var card = new AdaptiveCard(new AdaptiveSchemaVersion(1, 0))
-            {
-                Body = new List<AdaptiveElement>
-                {
-                    new AdaptiveTextBlock { Text = _localizer[ResourceKeys.RemindersList], Weight = AdaptiveTextWeight.Bolder }
-                },
-                Actions = reminders.Select((reminder, index) =>
-                {
-                    var date = DateTime.ParseExact(reminder.DueDateTimeLocal, "G", CultureInfo.InvariantCulture,
-                        DateTimeStyles.None);
-                    return new AdaptiveSubmitAction
-                    {
-                        Title = $"{index + 1}. {reminder.Text} - {date.ToString("g", CultureInfo.CurrentCulture)}",
-                        Data = reminder.RowKey
-                    };
-                }).Cast<AdaptiveAction>().ToList()
-            };
-
-            return card;
         }
     }
 
