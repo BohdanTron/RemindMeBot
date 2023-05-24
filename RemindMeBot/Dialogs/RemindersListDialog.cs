@@ -5,7 +5,6 @@ using Microsoft.Bot.Schema;
 using Microsoft.Extensions.Localization;
 using RemindMeBot.Resources;
 using RemindMeBot.Services;
-using Telegram.Bot;
 
 namespace RemindMeBot.Dialogs
 {
@@ -13,19 +12,16 @@ namespace RemindMeBot.Dialogs
     {
         private readonly ReminderTableService _reminderTableService;
         private readonly ReminderQueueService _reminderQueueService;
-        private readonly TelegramBotClient _telegramBotClient;
         private readonly IStringLocalizer<BotMessages> _localizer;
 
         public RemindersListDialog(
             IStateService stateService,
             ReminderTableService reminderTableService,
             ReminderQueueService reminderQueueService,
-            TelegramBotClient telegramBotClient,
             IStringLocalizer<BotMessages> localizer) : base(nameof(AddReminderDialog), stateService, localizer)
         {
             _reminderTableService = reminderTableService;
             _reminderQueueService = reminderQueueService;
-            _telegramBotClient = telegramBotClient;
             _localizer = localizer;
 
             AddDialog(new WaterfallDialog($"{nameof(RemindersListDialog)}.main",

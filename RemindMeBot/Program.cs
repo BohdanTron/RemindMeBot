@@ -11,7 +11,6 @@ using RemindMeBot.Bots;
 using RemindMeBot.Dialogs;
 using RemindMeBot.Middlewares;
 using RemindMeBot.Services;
-using Telegram.Bot;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -34,8 +33,7 @@ builder.Services.AddAzureClients(azureBuilder =>
 builder.Services.AddSingleton<ReminderTableService>();
 builder.Services.AddSingleton<ReminderQueueService>();
 
-// Add Telegram Bot Client
-builder.Services.AddSingleton(new TelegramBotClient(builder.Configuration["TelegramBotToken"]));
+// Add Telegram middleware
 builder.Services.AddSingleton<TelegramMiddleware>();
 
 // Add localization
