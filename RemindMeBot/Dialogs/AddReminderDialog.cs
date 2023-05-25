@@ -15,7 +15,7 @@ namespace RemindMeBot.Dialogs
     {
         private readonly IStateService _stateService;
         private readonly IClock _clock;
-        
+
         private readonly ReminderTableService _reminderTableService;
         private readonly ReminderQueueService _reminderQueueService;
 
@@ -190,7 +190,7 @@ namespace RemindMeBot.Dialogs
             };
 
             await _reminderTableService.Add(reminder, cancellationToken);
-            await _reminderQueueService.PublishCreatedMessage(reminder.PartitionKey, reminder.RowKey, cancellationToken);
+            await _reminderQueueService.PublishCreatedMessage(reminder, cancellationToken);
 
             var displayDate = date.ToString("g", CultureInfo.CurrentCulture);
             var reminderAddedMsg = shouldRepeat

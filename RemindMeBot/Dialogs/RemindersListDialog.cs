@@ -11,17 +11,14 @@ namespace RemindMeBot.Dialogs
     public class RemindersListDialog : CancelDialog
     {
         private readonly ReminderTableService _reminderTableService;
-        private readonly ReminderQueueService _reminderQueueService;
         private readonly IStringLocalizer<BotMessages> _localizer;
 
         public RemindersListDialog(
             IStateService stateService,
             ReminderTableService reminderTableService,
-            ReminderQueueService reminderQueueService,
             IStringLocalizer<BotMessages> localizer) : base(nameof(AddReminderDialog), stateService, localizer)
         {
             _reminderTableService = reminderTableService;
-            _reminderQueueService = reminderQueueService;
             _localizer = localizer;
 
             AddDialog(new WaterfallDialog($"{nameof(RemindersListDialog)}.main",
@@ -103,9 +100,10 @@ namespace RemindMeBot.Dialogs
             }
 
             await _reminderTableService.Delete(partitionKey, rowKey, cancellationToken);
-            await _reminderQueueService.PublishDeletedMessage(partitionKey, rowKey, cancellationToken);
 
-            await stepContext.Context.SendActivityAsync("Reminder was deleted", cancellationToken: cancellationToken);
+            var reminderDeletedMsg = _localizer[ResourceKeys.ReminderDeleted];
+            await stepContext.Context.SendActivityAsync(MessageFactory.Text(reminderDeletedMsg, reminderDeletedMsg),
+                cancellationToken: cancellationToken);
 
             return await stepContext.ReplaceDialogAsync(Id, cancellationToken: cancellationToken);
         }

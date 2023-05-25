@@ -209,4 +209,7 @@
   <data name="NoRemindersCreated" xml:space="preserve">
     <value>Наразі у вас нема жодного нагадування</value>
   </data>
+  <data name="ReminderDeleted" xml:space="preserve">
+    <value>Нагадування було видалено</value>
+  </data>
 </root>

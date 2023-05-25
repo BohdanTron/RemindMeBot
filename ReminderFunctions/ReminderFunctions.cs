@@ -1,5 +1,5 @@
 using System;
-using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Globalization;
 using System.Net.Http;
 using System.Threading;
@@ -16,6 +16,8 @@ using ITableEntity = Azure.Data.Tables.ITableEntity;
 
 namespace ReminderFunctions
 {
+    public record ReminderCreatedMessage(string PartitionKey, string RowKey);
+
     public record ReminderEntity : ITableEntity
     {
         public string PartitionKey { get; set; } = default!;
@@ -30,49 +32,48 @@ namespace ReminderFunctions
         public string ConversationReference { get; set; } = default!;
     }
 
-    public record ReminderActionMessage(ActionType Action, string PartitionKey, string RowKey);
-
-    public enum ActionType : byte
-    {
-        Created = 1,
-        Updated = 2,
-        Deleted = 3
-    }
-
     public static class ReminderFunctions
     {
-        private static readonly Dictionary<ActionType, string> ActionToHandlerMap = new()
+        [FunctionName(nameof(QueueStart))]
+        public static async Task QueueStart(
+            [QueueTrigger("reminders")] string message,
+            [DurableClient] IDurableOrchestrationClient starter,
+            ILogger logger)
         {
-            { ActionType.Created, nameof(CreateReminder) },
-            { ActionType.Updated, nameof(UpdateReminder) },
-            { ActionType.Deleted, nameof(DeleteReminder) }
-        };
+            logger.LogInformation($"Message from queue retrieved: {message}");
 
-        [FunctionName(nameof(RunOrchestrator))]
-        public static async Task<bool> RunOrchestrator(
-            [OrchestrationTrigger] IDurableOrchestrationContext context)
-        {
-            var reminder = context.GetInput<ReminderActionMessage>();
+            var remindedMsg = JsonConvert.DeserializeObject<ReminderCreatedMessage>(message);
 
-            var handler = ActionToHandlerMap[reminder.Action];
+            var instanceId = await starter.StartNewAsync(nameof(CreateReminder), input: remindedMsg);
 
-            var result = await context.CallSubOrchestratorAsync<bool>(handler, reminder);
-
-            return result;
+            logger.LogInformation("Started orchestration with ID = '{instanceId}'.", instanceId);
         }
 
         [FunctionName(nameof(CreateReminder))]
-        public static async Task<bool> CreateReminder(
-            [OrchestrationTrigger] IDurableOrchestrationContext context,
-            ILogger logger)
+        public static async Task<bool> CreateReminder([OrchestrationTrigger] IDurableOrchestrationContext context)
         {
-            var message = context.GetInput<ReminderActionMessage>();
+            var message = context.GetInput<ReminderCreatedMessage>();
             var reminder = await context.CallActivityAsync<ReminderEntity>(nameof(GetReminder), message);
 
             var reminderDateTimeLocal = DateTimeOffset.Parse(reminder.DueDateTimeLocal);
             var reminderDateTimeUtc = reminderDateTimeLocal.ToDateTimeUtc(reminder.TimeZone);
 
             await context.CreateTimer(reminderDateTimeUtc, CancellationToken.None);
+
+            var succeed = await context.CallSubOrchestratorAsync<bool>(nameof(SendReminder), message);
+
+            return succeed;
+        }
+
+        [FunctionName(nameof(SendReminder))]
+        public static async Task<bool> SendReminder(
+            [OrchestrationTrigger] IDurableOrchestrationContext context,
+            ILogger logger)
+        {
+            var message = context.GetInput<ReminderCreatedMessage>();
+            var reminder = await context.CallActivityAsync<ReminderEntity?>(nameof(GetReminder), message);
+
+            if (reminder is null) return false;
 
             var baseAddress = Environment.GetEnvironmentVariable("BotBaseAddress");
             var url = new Uri($"{baseAddress}/api/proactive-message/{reminder.PartitionKey}/{reminder.RowKey}");
@@ -88,59 +89,29 @@ namespace ReminderFunctions
                 logger.LogError(ex, "HTTP request to the proactive message endpoint failed");
             }
 
-
-            if (reminder.RepeatInterval is null)
-            {
-                return true;
-            }
+            if (reminder.RepeatInterval is null) return true;
 
             await context.CallActivityAsync(nameof(UpdateReminderDate), reminder);
-
-            await context.CallActivityAsync(nameof(PublishMessage),
-                new ReminderActionMessage(ActionType.Created, reminder.PartitionKey, reminder.RowKey));
+            await context.CallActivityAsync(nameof(PublishMessage), message);
 
             return true;
         }
 
-        [FunctionName(nameof(UpdateReminder))]
-        public static Task<bool> UpdateReminder(
-            [OrchestrationTrigger] IDurableOrchestrationContext context,
-            ILogger logger)
-        {
-            throw new NotImplementedException();
-        }
-
-        [FunctionName(nameof(DeleteReminder))]
-        public static Task<bool> DeleteReminder(
-            [OrchestrationTrigger] IDurableOrchestrationContext context,
-            ILogger logger)
-        {
-            throw new NotImplementedException();
-        }
-
-        [FunctionName(nameof(QueueStart))]
-        public static async Task QueueStart(
-            [QueueTrigger("reminders")] string message,
-            [DurableClient] IDurableOrchestrationClient starter,
-            ILogger logger)
-        {
-            logger.LogInformation($"Message from queue retrieved: {message}");
-
-            var reminder = JsonConvert.DeserializeObject<ReminderActionMessage>(message);
-
-            var instanceId = await starter.StartNewAsync(nameof(RunOrchestrator), input: reminder);
-
-            logger.LogInformation("Started orchestration with ID = '{instanceId}'.", instanceId);
-        }
-
         [FunctionName(nameof(GetReminder))]
-        public static async Task<ReminderEntity> GetReminder(
-            [ActivityTrigger] ReminderActionMessage message,
+        public static async Task<ReminderEntity?> GetReminder(
+            [ActivityTrigger] ReminderCreatedMessage message,
             [Table("reminders")] TableClient tableClient)
         {
-            var reminder = await tableClient.GetEntityAsync<ReminderEntity>(message.PartitionKey, message.RowKey);
+            try
+            {
+                var reminder = await tableClient.GetEntityIfExistsAsync<ReminderEntity>(message.PartitionKey, message.RowKey);
 
-            return reminder;
+                return reminder.HasValue ? reminder.Value : null;
+            }
+            catch (RequestFailedException)
+            {
+                return null;
+            }
         }
 
         [FunctionName(nameof(UpdateReminderDate))]
@@ -159,7 +130,7 @@ namespace ReminderFunctions
                 "yearly" => currentDateTime.AddYears(1),
                 _ => throw new InvalidOperationException($"Unsupported repeat interval: {reminder.RepeatInterval}")
             };
-            reminder.DueDateTimeLocal = nextDateTime.ToString(CultureInfo.CurrentCulture);
+            reminder.DueDateTimeLocal = nextDateTime.ToString("G", CultureInfo.InvariantCulture);
 
             logger.LogInformation($"Updating reminders with PartitionKey = {reminder.PartitionKey}, Row Key = {reminder.RowKey}, the new date = {reminder.DueDateTimeLocal}");
 
@@ -168,7 +139,7 @@ namespace ReminderFunctions
 
         [FunctionName(nameof(PublishMessage))]
         [return: Queue("reminders")]
-        public static string PublishMessage([ActivityTrigger] ReminderActionMessage message)
+        public static string PublishMessage([ActivityTrigger] ReminderCreatedMessage message)
         {
             return JsonConvert.SerializeObject(message);
         }

@@ -31,5 +31,6 @@
         public const string UnexpectedError = nameof(UnexpectedError);
         public const string RemindersList = nameof(RemindersList);
         public const string NoRemindersCreated = nameof(NoRemindersCreated);
+        public const string ReminderDeleted = nameof(ReminderDeleted);
     }
 }
