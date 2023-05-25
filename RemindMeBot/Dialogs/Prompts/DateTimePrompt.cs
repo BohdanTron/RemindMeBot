@@ -57,7 +57,7 @@ namespace RemindMeBot.Dialogs.Prompts
                 throw new ArgumentNullException(nameof(turnContext));
             }
 
-            if (state.TryGetValue("result", out var existingResult))
+            if (state.TryGetValue("result", out var existingResult) && ((PromptRecognizerResult<IList<DateTimeResolution>>)existingResult).Succeeded)
             {
                 return (PromptRecognizerResult<IList<DateTimeResolution>>) existingResult;
             }
