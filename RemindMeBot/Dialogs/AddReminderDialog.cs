@@ -169,7 +169,7 @@ namespace RemindMeBot.Dialogs
         private async Task<DialogTurnResult> SaveReminderStep(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
             var text = (string) stepContext.Values["reminderText"];
-            var date = (DateTimeOffset) stepContext.Values["reminderDate"];
+            var date = (DateTime) stepContext.Values["reminderDate"];
 
             var shouldRepeat = (bool) stepContext.Values["shouldRepeat"];
             var repeatInterval = ((FoundChoice) stepContext.Result)?.Value;
@@ -202,11 +202,11 @@ namespace RemindMeBot.Dialogs
             return await stepContext.EndDialogAsync(reminder, cancellationToken);
         }
 
-        private DateTimeOffset? RecognizeDate(List<DateTimeResolution>? dateTimeResolutions, string timeZone)
+        private DateTime? RecognizeDate(List<DateTimeResolution>? dateTimeResolutions, string timeZone)
         {
             if (dateTimeResolutions is null) return null;
 
-            var localDateTimeOffset = _clock.GetLocalDateTime(timeZone);
+            var localDateTime = _clock.GetLocalDateTime(timeZone).DateTime;
 
             foreach (var dateTimeResolution in dateTimeResolutions)
             {
@@ -217,17 +217,15 @@ namespace RemindMeBot.Dialogs
                 // Use current date if only the time is specified
                 if (recognizedDateTime.Date == default)
                 {
-                    recognizedDateTime = new DateTime(localDateTimeOffset.Year, localDateTimeOffset.Month, localDateTimeOffset.Day,
+                    recognizedDateTime = new DateTime(localDateTime.Year, localDateTime.Month, localDateTime.Day,
                         recognizedDateTime.Hour, recognizedDateTime.Minute, recognizedDateTime.Second);
                 }
 
-                var recognizedDateTimeOffset = new DateTimeOffset(recognizedDateTime, localDateTimeOffset.Offset);
-
                 // Ignore past dates and time
-                if (DateTimeOffset.Compare(localDateTimeOffset, recognizedDateTimeOffset) > 0)
+                if (DateTime.Compare(localDateTime, recognizedDateTime) > 0)
                     continue;
 
-                return recognizedDateTimeOffset;
+                return recognizedDateTime;
             }
 
             return null;

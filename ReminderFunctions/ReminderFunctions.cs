@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Concurrent;
 using System.Globalization;
 using System.Net.Http;
 using System.Threading;
@@ -17,20 +16,6 @@ using ITableEntity = Azure.Data.Tables.ITableEntity;
 namespace ReminderFunctions
 {
     public record ReminderCreatedMessage(string PartitionKey, string RowKey);
-
-    public record ReminderEntity : ITableEntity
-    {
-        public string PartitionKey { get; set; } = default!;
-        public string RowKey { get; set; } = default!;
-        public DateTimeOffset? Timestamp { get; set; }
-        public ETag ETag { get; set; }
-
-        public string Text { get; set; } = default!;
-        public string DueDateTimeLocal { get; set; } = default!;
-        public string TimeZone { get; set; } = default!;
-        public string? RepeatInterval { get; set; }
-        public string ConversationReference { get; set; } = default!;
-    }
 
     public static class ReminderFunctions
     {
@@ -55,7 +40,7 @@ namespace ReminderFunctions
             var message = context.GetInput<ReminderCreatedMessage>();
             var reminder = await context.CallActivityAsync<ReminderEntity>(nameof(GetReminder), message);
 
-            var reminderDateTimeLocal = DateTimeOffset.Parse(reminder.DueDateTimeLocal);
+            var reminderDateTimeLocal = DateTime.ParseExact(reminder.DueDateTimeLocal, "G", CultureInfo.InvariantCulture, DateTimeStyles.None);
             var reminderDateTimeUtc = reminderDateTimeLocal.ToDateTimeUtc(reminder.TimeZone);
 
             await context.CreateTimer(reminderDateTimeUtc, CancellationToken.None);
@@ -120,7 +105,7 @@ namespace ReminderFunctions
             [Table("reminders")] TableClient tableClient,
             ILogger logger)
         {
-            var currentDateTime = DateTimeOffset.Parse(reminder.DueDateTimeLocal);
+            var currentDateTime = DateTime.ParseExact(reminder.DueDateTimeLocal, "G", CultureInfo.InvariantCulture, DateTimeStyles.None);
 
             var nextDateTime = reminder.RepeatInterval!.ToLowerInvariant() switch
             {
@@ -134,7 +119,7 @@ namespace ReminderFunctions
 
             logger.LogInformation($"Updating reminders with PartitionKey = {reminder.PartitionKey}, Row Key = {reminder.RowKey}, the new date = {reminder.DueDateTimeLocal}");
 
-            await tableClient.UpdateEntityAsync(reminder, ETag.All, TableUpdateMode.Replace);
+            await tableClient.UpdateEntityAsync(reminder, ETag.All);
         }
 
         [FunctionName(nameof(PublishMessage))]
@@ -143,5 +128,17 @@ namespace ReminderFunctions
         {
             return JsonConvert.SerializeObject(message);
         }
+    }
+
+    public record ReminderEntity : ITableEntity
+    {
+        public string PartitionKey { get; set; } = default!;
+        public string RowKey { get; set; } = default!;
+        public DateTimeOffset? Timestamp { get; set; }
+        public ETag ETag { get; set; }
+
+        public string DueDateTimeLocal { get; set; } = default!;
+        public string TimeZone { get; set; } = default!;
+        public string? RepeatInterval { get; set; }
     }
 }
