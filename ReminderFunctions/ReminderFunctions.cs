@@ -43,11 +43,13 @@ namespace ReminderFunctions
             var reminderDateTimeLocal = DateTime.ParseExact(reminder.DueDateTimeLocal, "G", CultureInfo.InvariantCulture, DateTimeStyles.None);
             var reminderDateTimeUtc = reminderDateTimeLocal.ToDateTimeUtc(reminder.TimeZone);
 
+            if (reminderDateTimeUtc <= context.CurrentUtcDateTime) return false;
+
             await context.CreateTimer(reminderDateTimeUtc, CancellationToken.None);
 
-            var succeed = await context.CallSubOrchestratorAsync<bool>(nameof(SendReminder), message);
+            var succeeded = await context.CallSubOrchestratorAsync<bool>(nameof(SendReminder), message);
 
-            return succeed;
+            return succeeded;
         }
 
         [FunctionName(nameof(SendReminder))]

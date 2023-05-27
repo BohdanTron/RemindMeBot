@@ -121,7 +121,7 @@
     <value>Please choose your language:</value>
   </data>
   <data name="AskForLocation" xml:space="preserve">
-    <value>Please enter your city and country (e.g London, United Kingdom)</value>
+    <value>Please enter your location (e.g London, United Kingdom)</value>
   </data>
   <data name="AskForReminderDate" xml:space="preserve">
     <value>When should I remind you?</value>
@@ -211,5 +211,10 @@
   </data>
   <data name="ReminderDeleted" xml:space="preserve">
     <value>Reminder has been deleted</value>
+  </data>
+  <data name="AskToChangeLocation" xml:space="preserve">
+    <value>Please enter your location (e.g., London, United Kingdom). 
+
+*Note:* If this change updates your timezone, it may affect the timing of active reminders. Reminders are set based on the timezone at creation, so they could trigger at different local times after a timezone change. Please check your reminders after updating your location to ensure their timings are as expected.</value>
   </data>
 </root>

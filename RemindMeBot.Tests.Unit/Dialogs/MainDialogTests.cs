@@ -24,7 +24,7 @@ namespace RemindMeBot.Tests.Unit.Dialogs
 
         private readonly IStateService _stateService = Substitute.For<IStateService>();
         private readonly UserSettingsDialog _userSettingsDialog = Substitute.For<UserSettingsDialog>(null, null, null, null, null);
-        private readonly ChangeUserSettingsDialog _changeUserSettingsDialog = Substitute.For<ChangeUserSettingsDialog>(null, null, null, null, null);
+        private readonly ChangeUserSettingsDialog _changeUserSettingsDialog = Substitute.For<ChangeUserSettingsDialog>(null, null, null, null, null, null);
         private readonly AddReminderDialog _addReminderDialog = Substitute.For<AddReminderDialog>(null, null, null, null, null, null);
         private readonly RemindersListDialog _remindersListDialog = Substitute.For<RemindersListDialog>(null, null, null);
 

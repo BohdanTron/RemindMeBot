@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
+using Azure.Data.Tables;
 using FluentAssertions;
 using Microsoft.Bot.Builder;
 using Microsoft.Bot.Builder.Testing;
@@ -26,10 +28,12 @@ namespace RemindMeBot.Tests.Unit.Dialogs
         private readonly ILocationService _locationService = Substitute.For<ILocationService>();
         private readonly ITranslationService _translationService = Substitute.For<ITranslationService>();
         private readonly IClock _clock = Substitute.For<IClock>();
+        private readonly ReminderTableService _reminderTableService = Substitute.ForPartsOf<ReminderTableService>(Substitute.For<TableServiceClient>());
+
 
         public ChangeUserSettingsDialogTests(ITestOutputHelper output) : base(output)
         {
-            _sut = new ChangeUserSettingsDialog(_stateService, _locationService, _translationService, _clock, Localizer);
+            _sut = new ChangeUserSettingsDialog(_stateService, _locationService, _translationService, _clock, _reminderTableService, Localizer);
         }
 
         [Theory]
@@ -74,6 +78,9 @@ namespace RemindMeBot.Tests.Unit.Dialogs
 
             var languageChoice = Localizer[ResourceKeys.Language];
             var locationChoice = Localizer[ResourceKeys.Location];
+
+            _reminderTableService.BulkUpdate(Arg.Any<string>(), Arg.Any<IList<ReminderEntity>>(), Arg.Any<CancellationToken>())
+                .Returns(Task.CompletedTask);
 
             _stateService.UserSettingsPropertyAccessor
                 .GetAsync(Arg.Any<ITurnContext>(), Arg.Any<Func<UserSettings>>(), Arg.Any<CancellationToken>())
@@ -150,6 +157,12 @@ namespace RemindMeBot.Tests.Unit.Dialogs
                 .GetAsync(Arg.Any<ITurnContext>(), Arg.Any<Func<UserSettings>>(), Arg.Any<CancellationToken>())
                 .Returns(userSettings);
 
+            _reminderTableService.GetList(Arg.Any<string>(), Arg.Any<CancellationToken>())
+                .Returns(new List<ReminderEntity> { new()
+                {
+                    DueDateTimeLocal = "05/26/2023 20:15:06"
+                }});
+
             var newCity = "New York";
             var newCountry = "United States";
             var newTimeZone = "America/New_York";
@@ -171,11 +184,13 @@ namespace RemindMeBot.Tests.Unit.Dialogs
 
             // Step 2 - Ask the location to change
             reply = await testClient.SendActivityAsync<IMessageActivity>(locationChoice);
-            reply.Text.Should().Be(Localizer[ResourceKeys.AskForLocation]);
+            reply.Text.Should().Be(Localizer[ResourceKeys.AskToChangeLocation]);
 
             // Step 3 - Change the location
             reply = await testClient.SendActivityAsync<IMessageActivity>(newCity);
             reply.Text.Should().Be(Localizer[ResourceKeys.UserSettingsHaveBeenChanged]);
+            await _reminderTableService.Received(1).BulkUpdate(Arg.Any<string>(), Arg.Any<IList<ReminderEntity>>(),
+                Arg.Any<CancellationToken>());
 
             // Display new user's settings
             reply = testClient.GetNextReply<IMessageActivity>();
@@ -236,7 +251,7 @@ namespace RemindMeBot.Tests.Unit.Dialogs
 
             // Step 2 - Ask the location to change
             reply = await testClient.SendActivityAsync<IMessageActivity>(locationChoice);
-            reply.Text.Should().Be(Localizer[ResourceKeys.AskForLocation]);
+            reply.Text.Should().Be(Localizer[ResourceKeys.AskToChangeLocation]);
 
             // Step 3 - Enter invalid location
             var invalidLocation = "InvalidLocation";

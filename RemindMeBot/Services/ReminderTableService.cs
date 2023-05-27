@@ -40,6 +40,17 @@ namespace RemindMeBot.Services
             return reminders;
         }
 
+        public virtual async Task BulkUpdate(string partitionKey, IList<ReminderEntity> reminders, CancellationToken cancellationToken = new())
+        {
+            if(!reminders.Any()) return;
+
+            var actions = reminders
+                .Select(r => new TableTransactionAction(TableTransactionActionType.UpdateMerge, r))
+                .ToList();
+
+            await _tableClient.SubmitTransactionAsync(actions, cancellationToken);
+        }
+
         public virtual async Task Add(ReminderEntity reminder, CancellationToken cancellationToken = new())
         {
             await _tableClient.AddEntityAsync(reminder, cancellationToken);

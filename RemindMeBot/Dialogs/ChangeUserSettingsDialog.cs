@@ -16,6 +16,7 @@ namespace RemindMeBot.Dialogs
         private readonly ILocationService _locationService;
         private readonly ITranslationService _translationService;
         private readonly IClock _clock;
+        private readonly ReminderTableService _reminderTableService;
         private readonly IStringLocalizer<BotMessages> _localizer;
 
         public ChangeUserSettingsDialog(
@@ -23,12 +24,14 @@ namespace RemindMeBot.Dialogs
             ILocationService locationService,
             ITranslationService translationService,
             IClock clock,
+            ReminderTableService reminderTableService,
             IStringLocalizer<BotMessages> localizer) : base(nameof(ChangeUserSettingsDialog), stateService, localizer)
         {
             _stateService = stateService;
             _locationService = locationService;
             _translationService = translationService;
             _clock = clock;
+            _reminderTableService = reminderTableService;
             _localizer = localizer;
 
             AddDialog(new ChoicePrompt($"{nameof(ChangeUserSettingsDialog)}.settingToChange"));
@@ -105,7 +108,7 @@ namespace RemindMeBot.Dialogs
             }
             if (settingToChange == location)
             {
-                var askForLocation = _localizer[ResourceKeys.AskForLocation];
+                var askForLocation = _localizer[ResourceKeys.AskToChangeLocation];
                 var retryPrompt = _localizer[ResourceKeys.AskToRetryLocation];
 
                 return stepContext.PromptAsync($"{nameof(ChangeUserSettingsDialog)}.location",
@@ -126,29 +129,14 @@ namespace RemindMeBot.Dialogs
 
             var settingToChange = (string) stepContext.Values["settingToChange"];
 
-            var userSettings = await _stateService.UserSettingsPropertyAccessor.GetAsync(stepContext.Context,
-                () => new UserSettings(), cancellationToken);
-
             if (settingToChange == language)
             {
-                var languageChoice = ((FoundChoice) stepContext.Result).Value;
-
-                var culture = CultureHelper.GetCulture(languageChoice);
-                CultureHelper.SetCurrentCulture(culture);
-
-                userSettings.Language = languageChoice;
-                userSettings.Culture = culture;
+                await ChangeUserLanguage(stepContext, cancellationToken);
             }
             if (settingToChange == location)
             {
-                var locationInput = (string) stepContext.Result;
-                var translatedLocation = userSettings.Culture == "uk-UA"
-                    ? await _translationService.Translate(locationInput, from: "uk-UA", to: "en-US")
-                    : locationInput;
-
-                var preciseLocation = await _locationService.GetLocation(translatedLocation);
-
-                if (preciseLocation is null)
+                var locationChanged = await ChangeUserLocation(stepContext, cancellationToken);
+                if (!locationChanged)
                 {
                     var askToRetryLocation = _localizer[ResourceKeys.AskToRetryLocation];
                     return await stepContext.ReplaceDialogAsync($"{nameof(ChangeUserSettingsDialog)}.retryLocation",
@@ -158,15 +146,15 @@ namespace RemindMeBot.Dialogs
                             RetryPrompt = MessageFactory.Text(askToRetryLocation, askToRetryLocation)
                         }, cancellationToken);
                 }
-
-                userSettings.Location = $"{preciseLocation.City}, {preciseLocation.Country}";
-                userSettings.TimeZone = preciseLocation.TimeZoneId;
             }
 
-            await _stateService.UserSettingsPropertyAccessor.SetAsync(stepContext.Context, userSettings, cancellationToken);
+            var userSettings = await _stateService.UserSettingsPropertyAccessor.GetAsync(stepContext.Context,
+                () => new UserSettings(), cancellationToken);
 
-            var settingsChanged = _localizer[ResourceKeys.UserSettingsHaveBeenChanged];
-            await stepContext.Context.SendActivityAsync(MessageFactory.Text(settingsChanged, settingsChanged), cancellationToken);
+            CultureHelper.SetCurrentCulture(userSettings.Culture!);
+
+            var settingsChangedMsg = _localizer[ResourceKeys.UserSettingsHaveBeenChanged];
+            await stepContext.Context.SendActivityAsync(MessageFactory.Text(settingsChangedMsg, settingsChangedMsg), cancellationToken);
 
             await DisplayCurrentUserSettings(stepContext, userSettings, cancellationToken);
 
@@ -186,6 +174,63 @@ namespace RemindMeBot.Dialogs
                 }, cancellationToken);
         }
 
+        private async Task ChangeUserLanguage(WaterfallStepContext stepContext, CancellationToken cancellationToken)
+        {
+            var userSettings = await _stateService.UserSettingsPropertyAccessor.GetAsync(stepContext.Context,
+                () => new UserSettings(), cancellationToken);
+
+            var languageChoice = ((FoundChoice) stepContext.Result).Value;
+
+            userSettings.Language = languageChoice;
+            userSettings.Culture = CultureHelper.GetCulture(languageChoice);
+
+            await _stateService.UserSettingsPropertyAccessor.SetAsync(stepContext.Context, userSettings, cancellationToken);
+        }
+
+        private async Task<bool> ChangeUserLocation(WaterfallStepContext stepContext, CancellationToken cancellationToken)
+        {
+            var userSettings = await _stateService.UserSettingsPropertyAccessor.GetAsync(stepContext.Context,
+                () => new UserSettings(), cancellationToken);
+
+            var locationChoice = (string) stepContext.Result;
+            var translatedLocation = userSettings.Culture == "uk-UA"
+                ? await _translationService.Translate(locationChoice, from: "uk-UA", to: "en-US")
+                : locationChoice;
+
+            var preciseLocation = await _locationService.GetLocation(translatedLocation);
+            if (preciseLocation is null)
+            {
+                return false;
+            }
+
+            var oldTimeZone = userSettings.TimeZone!;
+            var newTimeZone = preciseLocation.TimeZoneId;
+
+            if (oldTimeZone != newTimeZone)
+            {
+                var conversation = stepContext.Context.Activity.GetConversationReference();
+                var reminders = await _reminderTableService.GetList(conversation.User.Id, cancellationToken);
+
+                foreach (var reminder in reminders)
+                {
+                    var oldDateTime = DateTime.ParseExact(reminder.DueDateTimeLocal, "G", CultureInfo.InvariantCulture, DateTimeStyles.None);
+                    var newDateTime = _clock.ToAnotherTimeZone(oldDateTime, oldTimeZone, newTimeZone);
+
+                    reminder.TimeZone = newTimeZone;
+                    reminder.DueDateTimeLocal = newDateTime.ToString("G", CultureInfo.InvariantCulture);
+                }
+
+                await _reminderTableService.BulkUpdate(conversation.User.Id, reminders, cancellationToken);
+            }
+
+            userSettings.Location = $"{preciseLocation.City}, {preciseLocation.Country}";
+            userSettings.TimeZone = newTimeZone;
+
+            await _stateService.UserSettingsPropertyAccessor.SetAsync(stepContext.Context, userSettings, cancellationToken);
+
+            return true;
+        }
+
         private async Task DisplayCurrentUserSettings(WaterfallStepContext stepContext, UserSettings userSettings, CancellationToken cancellationToken)
         {
             var (location, language, timeZone) = userSettings;
@@ -194,7 +239,7 @@ namespace RemindMeBot.Dialogs
             {
                 throw new ArgumentNullException(nameof(userSettings));
             }
-            
+
             var localTime = _clock.GetLocalDateTime(timeZone).ToString("t", CultureInfo.CurrentCulture);
 
             var message = _localizer[ResourceKeys.UserCurrentSettings, language, location, timeZone, localTime];
