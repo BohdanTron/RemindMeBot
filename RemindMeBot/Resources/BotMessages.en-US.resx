@@ -217,4 +217,10 @@
 
 *Note:* If this change updates your timezone, it may affect the timing of active reminders. Reminders are set based on the timezone at creation, so they could trigger at different local times after a timezone change. Please check your reminders after updating your location to ensure their timings are as expected.</value>
   </data>
+  <data name="ReminderNotRecognized" xml:space="preserve">
+    <value>I'm sorry, but I couldn't understand the date or time for the reminder in your message. Could you please rephrase or provide more details? For example, "Call mom at 6 PM tomorrow", or "Doctor's appointment on March 15 at 10 AM".</value>
+  </data>
+  <data name="WhatToRemindYouAbout" xml:space="preserve">
+    <value>What to remind you about?</value>
+  </data>
 </root>

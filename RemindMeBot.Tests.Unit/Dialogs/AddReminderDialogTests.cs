@@ -51,7 +51,7 @@ namespace RemindMeBot.Tests.Unit.Dialogs
         /// </summary>
         [Theory]
         [InlineData("English", "en-US", "Europe/London", "Take out the trash", "tomorrow at 2 PM", "weekly")]
-        [InlineData("Українська", "uk-UA", "Europe/Kiev", "Винести сміття", "завтра о 14:00", "щотижня")]
+        [InlineData("Українська", "uk-UA", "Europe/Kyiv", "Винести сміття", "завтра о 14:00", "щотижня")]
         public async Task ShouldSaveRepeatedEvent_WhenBasicFlow(
             string language,
             string culture,
@@ -69,7 +69,9 @@ namespace RemindMeBot.Tests.Unit.Dialogs
                 TimeZone = timeZone
             };
 
-            ConfigureLocalization(culture, userSettings.TimeZone);
+            var localDateTime = new DateTime(2023, 5, 27, 0, 0, 0);
+
+            ConfigureLocalization(culture, userSettings.TimeZone, localDateTime);
 
             _stateService.UserSettingsPropertyAccessor
                 .GetAsync(Arg.Any<ITurnContext>(), Arg.Any<Func<UserSettings>>(), Arg.Any<CancellationToken>())
@@ -82,7 +84,7 @@ namespace RemindMeBot.Tests.Unit.Dialogs
             _reminderTableService.Add(Arg.Any<ReminderEntity>(), Arg.Any<CancellationToken>())
                 .Returns(Task.CompletedTask);
 
-            var reminderDateTime = DateTime.UtcNow.AddDays(1).Date.AddHours(14);
+            var reminderDateTime = localDateTime.AddDays(1).Date.AddHours(14);
 
             var testClient = new DialogTestClient(Channels.Test, _sut, middlewares: Middlewares);
 
@@ -125,7 +127,7 @@ namespace RemindMeBot.Tests.Unit.Dialogs
         /// </summary>
         [Theory]
         [InlineData("English", "en-US", "Europe/London", "Take out the trash", "tomorrow at 2 PM")]
-        [InlineData("Українська", "uk-UA", "Europe/Kiev", "Винести сміття", "завтра о 14:00")]
+        [InlineData("Українська", "uk-UA", "Europe/Kyiv", "Винести сміття", "завтра о 14:00")]
         public async Task ShouldSaveNotRepeatedEvent_WhenBasicFlow(
             string language,
             string culture,
@@ -142,7 +144,9 @@ namespace RemindMeBot.Tests.Unit.Dialogs
                 TimeZone = timeZone
             };
 
-            ConfigureLocalization(culture, userSettings.TimeZone);
+            var localDateTime = new DateTime(2023, 5, 27, 0, 0, 0);
+
+            ConfigureLocalization(culture, userSettings.TimeZone, localDateTime);
 
             _stateService.UserSettingsPropertyAccessor
                 .GetAsync(Arg.Any<ITurnContext>(), Arg.Any<Func<UserSettings>>(), Arg.Any<CancellationToken>())
@@ -155,7 +159,10 @@ namespace RemindMeBot.Tests.Unit.Dialogs
             _reminderTableService.Add(Arg.Any<ReminderEntity>(), Arg.Any<CancellationToken>())
                 .Returns(Task.CompletedTask);
 
-            var reminderDateTime = DateTime.UtcNow.AddDays(1).Date.AddHours(14);
+            _clock.GetLocalDateTime(timeZone)
+                .Returns(localDateTime);
+                
+            var reminderDateTime = localDateTime.AddDays(1).Date.AddHours(14);
 
             var testClient = new DialogTestClient(Channels.Test, _sut, middlewares: Middlewares);
 

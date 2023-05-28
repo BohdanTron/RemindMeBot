@@ -70,6 +70,7 @@ builder.Services.AddSingleton<UserSettingsDialog>();
 builder.Services.AddSingleton<ChangeUserSettingsDialog>();
 builder.Services.AddSingleton<AddReminderDialog>();
 builder.Services.AddSingleton<RemindersListDialog>();
+builder.Services.AddSingleton<CreateQuickReminderDialog>();
 builder.Services.AddSingleton<MainDialog>();
 builder.Services.AddTransient<IBot, MainBot<MainDialog>>();
 

@@ -33,5 +33,7 @@
         public const string NoRemindersCreated = nameof(NoRemindersCreated);
         public const string ReminderDeleted = nameof(ReminderDeleted);
         public const string AskToChangeLocation = nameof(AskToChangeLocation);
+        public const string ReminderNotRecognized = nameof(ReminderNotRecognized);
+        public const string WhatToRemindYouAbout = nameof(WhatToRemindYouAbout);
     }
 }

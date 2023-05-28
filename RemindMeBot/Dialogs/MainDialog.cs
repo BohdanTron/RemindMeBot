@@ -15,6 +15,7 @@ namespace RemindMeBot.Dialogs
         private readonly ChangeUserSettingsDialog _changeUserSettingsDialog;
         private readonly AddReminderDialog _addReminderDialog;
         private readonly RemindersListDialog _remindersListDialog;
+        private readonly CreateQuickReminderDialog _createQuickReminderDialog;
 
         private readonly IStringLocalizer<BotMessages> _localizer;
 
@@ -24,6 +25,7 @@ namespace RemindMeBot.Dialogs
             ChangeUserSettingsDialog changeUserSettingsDialog,
             AddReminderDialog addReminderDialog,
             RemindersListDialog remindersListDialog,
+            CreateQuickReminderDialog createQuickReminderDialog,
             IStringLocalizer<BotMessages> localizer) : base(nameof(MainDialog))
         {
             _stateService = stateService;
@@ -32,6 +34,7 @@ namespace RemindMeBot.Dialogs
             _remindersListDialog = remindersListDialog;
             _userSettingsDialog = userSettingsDialog;
             _changeUserSettingsDialog = changeUserSettingsDialog;
+            _createQuickReminderDialog = createQuickReminderDialog;
 
             _localizer = localizer;
 
@@ -39,6 +42,7 @@ namespace RemindMeBot.Dialogs
             AddDialog(_changeUserSettingsDialog);
             AddDialog(_addReminderDialog);
             AddDialog(_remindersListDialog);
+            AddDialog(_createQuickReminderDialog);
 
             AddDialog(new WaterfallDialog($"{nameof(MainDialog)}.{nameof(WaterfallDialog)}",
                 new WaterfallStep[]
@@ -65,7 +69,9 @@ namespace RemindMeBot.Dialogs
                         return await stepContext.BeginDialogAsync(_userSettingsDialog.Id, cancellationToken: cancellationToken);
                     }
 
-                    await stepContext.Context.SendActivityAsync(MessageFactory.Text("What to remind you about?"), cancellationToken);
+                    var whatToRemindMsg = _localizer[ResourceKeys.WhatToRemindYouAbout];
+                    await stepContext.Context.SendActivityAsync(MessageFactory.Text(whatToRemindMsg, whatToRemindMsg), cancellationToken);
+
                     return await stepContext.EndDialogAsync(cancellationToken: cancellationToken);
 
                 case "/my-settings":
@@ -78,18 +84,14 @@ namespace RemindMeBot.Dialogs
                     return await stepContext.BeginDialogAsync(_remindersListDialog.Id, cancellationToken: cancellationToken);
 
                 case "/cancel":
-                    var noActiveOperations = _localizer[ResourceKeys.NoActiveOperations];
+                    var noActiveOperationsMsg = _localizer[ResourceKeys.NoActiveOperations];
                     await stepContext.Context.SendActivityAsync(
-                        MessageFactory.Text(noActiveOperations, noActiveOperations), cancellationToken);
+                        MessageFactory.Text(noActiveOperationsMsg, noActiveOperationsMsg), cancellationToken);
 
                     return await stepContext.EndDialogAsync(cancellationToken: cancellationToken);
 
                 default:
-                    var unknownCommand = _localizer[ResourceKeys.UnknownCommand];
-
-                    await stepContext.Context.SendActivityAsync(MessageFactory.Text(unknownCommand, unknownCommand), cancellationToken);
-
-                    return await stepContext.EndDialogAsync(cancellationToken: cancellationToken);
+                    return await stepContext.BeginDialogAsync(_createQuickReminderDialog.Id, cancellationToken: cancellationToken);
             }
         }
 
@@ -102,7 +104,7 @@ namespace RemindMeBot.Dialogs
                     return await stepContext.ReplaceDialogAsync(Id, cancellationToken: cancellationToken);
                 }
 
-                await stepContext.Context.SendActivityAsync(MessageFactory.Text("What to remind you about?"), cancellationToken);
+                return await stepContext.BeginDialogAsync(_createQuickReminderDialog.Id, cancellationToken: cancellationToken);
             }
 
             return await stepContext.EndDialogAsync(cancellationToken: cancellationToken);

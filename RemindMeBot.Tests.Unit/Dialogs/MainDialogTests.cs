@@ -27,10 +27,18 @@ namespace RemindMeBot.Tests.Unit.Dialogs
         private readonly ChangeUserSettingsDialog _changeUserSettingsDialog = Substitute.For<ChangeUserSettingsDialog>(null, null, null, null, null, null);
         private readonly AddReminderDialog _addReminderDialog = Substitute.For<AddReminderDialog>(null, null, null, null, null, null);
         private readonly RemindersListDialog _remindersListDialog = Substitute.For<RemindersListDialog>(null, null, null);
+        private readonly CreateQuickReminderDialog _createQuickReminderDialog = Substitute.For<CreateQuickReminderDialog>(null, null, null, null, null);
 
         public MainDialogTests(ITestOutputHelper output) : base(output)
         {
-            _sut = new MainDialog(_stateService, _userSettingsDialog, _changeUserSettingsDialog, _addReminderDialog, _remindersListDialog, Localizer);
+            _sut = new MainDialog(
+                _stateService, 
+                _userSettingsDialog, 
+                _changeUserSettingsDialog, 
+                _addReminderDialog,
+                _remindersListDialog, 
+                _createQuickReminderDialog, 
+                Localizer);
         }
 
         [Fact]
@@ -58,10 +66,14 @@ namespace RemindMeBot.Tests.Unit.Dialogs
             reply.Text.Should().Be("Welcome to the RemindMe chatbot! Please choose your language: (1) English or (2) Українська");
         }
 
-        [Fact]
-        public async Task ShouldNotBeginUserSettingsDialog_WhenStartCommandAndUserSettingsAlreadySet()
+        [Theory]
+        [InlineData("en-US")]
+        [InlineData("uk-UA")]
+        public async Task ShouldNotBeginUserSettingsDialog_WhenStartCommandAndUserSettingsAlreadySet(string culture)
         {
             // Arrange
+            ConfigureLocalization(culture);
+
             _stateService.UserSettingsPropertyAccessor
                 .GetAsync(Arg.Any<ITurnContext>(), Arg.Any<Func<UserSettings>>(), Arg.Any<CancellationToken>())
                 .Returns(new UserSettings { TimeZone = "Europe/Kyiv" });
@@ -71,23 +83,32 @@ namespace RemindMeBot.Tests.Unit.Dialogs
             var reply = await testClient.SendActivityAsync<IMessageActivity>("/start");
 
             // Assert
-            reply.Text.Should().Be("What to remind you about?");
+            reply.Text.Should().Be(Localizer[ResourceKeys.WhatToRemindYouAbout]);
         }
 
-        [Theory]
-        [InlineData("en-US")]
-        [InlineData("uk-UA")]
-        public async Task ShouldReplyWithUnknownCommandMessage_WhenUnknownCommand(string culture)
+        [Fact]
+        public async Task ShouldBeginQuickReminderDialog_WhenUnknownCommand()
         {
             // Arrange
-            ConfigureLocalization(culture);
+            _createQuickReminderDialog
+                .BeginDialogAsync(Arg.Any<DialogContext>(), Arg.Any<object>(), Arg.Any<CancellationToken>())
+                .Returns(async callInfo =>
+                {
+                    var dialogContext = callInfo.Arg<DialogContext>();
+                    var cancellationToken = callInfo.Arg<CancellationToken>();
+
+                    await dialogContext.Context.SendActivityAsync("Reminder was added", cancellationToken: cancellationToken);
+
+                    return await dialogContext.EndDialogAsync(cancellationToken: cancellationToken);
+                });
+
             var testClient = new DialogTestClient(Channels.Test, _sut, middlewares: Middlewares);
 
             // Act
             var reply = await testClient.SendActivityAsync<IMessageActivity>("/unknown-command");
 
             // Assert
-            reply.Text.Should().Be(Localizer[ResourceKeys.UnknownCommand]);
+            reply.Text.Should().Be("Reminder was added");
         }
 
         [Theory]
