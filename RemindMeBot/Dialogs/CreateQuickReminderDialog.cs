@@ -13,7 +13,9 @@ namespace RemindMeBot.Dialogs
     public class CreateQuickReminderDialog : CancelDialog
     {
         private readonly IStateService _stateService;
+        private readonly ITranslationService _translationService;
         private readonly IClock _clock;
+
         private readonly ReminderTableService _reminderTableService;
         private readonly ReminderQueueService _reminderQueueService;
 
@@ -21,12 +23,14 @@ namespace RemindMeBot.Dialogs
 
         public CreateQuickReminderDialog(
             IStateService stateService,
+            ITranslationService translationService,
             IClock clock,
             ReminderTableService reminderTableService,
             ReminderQueueService reminderQueueService,
             IStringLocalizer<BotMessages> localizer) : base(nameof(CreateQuickReminderDialog), stateService, localizer)
         {
             _stateService = stateService;
+            _translationService = translationService;
             _clock = clock;
             _reminderTableService = reminderTableService;
             _reminderQueueService = reminderQueueService;
@@ -47,9 +51,11 @@ namespace RemindMeBot.Dialogs
             var userSettings = await _stateService.UserSettingsPropertyAccessor.GetAsync(stepContext.Context,
                 () => new UserSettings(), cancellationToken);
 
-            // TODO: Add user input translation when uk-UA
+            var text = stepContext.Context.Activity.Text;
+            var input = stepContext.Context.Activity.Locale == "en-US"
+                ? text
+                : await _translationService.Translate(text, from: "uk-UA", to: "en-US");
 
-            var input = stepContext.Context.Activity.Text;
             var localDateTime = _clock.GetLocalDateTime(userSettings.TimeZone!).DateTime;
 
             var reminder = ReminderRecognizer.Recognize(input, localDateTime);
@@ -67,7 +73,7 @@ namespace RemindMeBot.Dialogs
             {
                 PartitionKey = conversation.User.Id,
                 RowKey = Guid.NewGuid().ToString(),
-                Text = reminder.Text,
+                Text = text,
                 DueDateTimeLocal = reminder.DateTime.ToString("G", CultureInfo.InvariantCulture),
                 RepeatInterval = reminder.Interval,
                 TimeZone = userSettings.TimeZone!,
@@ -79,8 +85,8 @@ namespace RemindMeBot.Dialogs
 
             var displayDate = reminder.DateTime.ToString("g", CultureInfo.CurrentCulture);
             var reminderAddedMsg = reminder.Interval is null
-                ? _localizer[ResourceKeys.ReminderAdded, reminder.Text, displayDate]
-                : _localizer[ResourceKeys.RepeatedReminderAdded, reminder.Text, displayDate, reminder.Interval];
+                ? _localizer[ResourceKeys.ReminderAdded, text, displayDate]
+                : _localizer[ResourceKeys.RepeatedReminderAdded, text, displayDate, reminder.Interval];
 
             await stepContext.Context.SendActivityAsync(MessageFactory.Text(reminderAddedMsg, reminderAddedMsg), cancellationToken);
 

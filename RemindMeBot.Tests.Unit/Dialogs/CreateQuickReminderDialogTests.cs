@@ -27,13 +27,14 @@ namespace RemindMeBot.Tests.Unit.Dialogs
         private readonly CreateQuickReminderDialog _sut;
 
         private readonly IStateService _stateService = Substitute.For<IStateService>();
+        private readonly ITranslationService _translationService = Substitute.For<ITranslationService>();
         private readonly IClock _clock = Substitute.For<IClock>();
         private readonly ReminderTableService _reminderTableService = Substitute.ForPartsOf<ReminderTableService>(Substitute.For<TableServiceClient>());
         private readonly ReminderQueueService _reminderQueueService = Substitute.ForPartsOf<ReminderQueueService>(Substitute.For<QueueServiceClient>());
 
         public CreateQuickReminderDialogTests(ITestOutputHelper output) : base(output)
         {
-            _sut = new CreateQuickReminderDialog(_stateService, _clock, _reminderTableService, _reminderQueueService, Localizer);
+            _sut = new CreateQuickReminderDialog(_stateService, _translationService, _clock, _reminderTableService, _reminderQueueService, Localizer);
         }
 
 

@@ -27,7 +27,7 @@ namespace RemindMeBot.Tests.Unit.Dialogs
         private readonly ChangeUserSettingsDialog _changeUserSettingsDialog = Substitute.For<ChangeUserSettingsDialog>(null, null, null, null, null, null);
         private readonly AddReminderDialog _addReminderDialog = Substitute.For<AddReminderDialog>(null, null, null, null, null, null);
         private readonly RemindersListDialog _remindersListDialog = Substitute.For<RemindersListDialog>(null, null, null);
-        private readonly CreateQuickReminderDialog _createQuickReminderDialog = Substitute.For<CreateQuickReminderDialog>(null, null, null, null, null);
+        private readonly CreateQuickReminderDialog _createQuickReminderDialog = Substitute.For<CreateQuickReminderDialog>(null, null, null, null, null, null);
 
         public MainDialogTests(ITestOutputHelper output) : base(output)
         {
