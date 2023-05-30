@@ -78,7 +78,9 @@ namespace RemindMeBot.Dialogs.Prompts
                 }
 
                 var refTime = turnContext.Activity.LocalTimestamp?.DateTime;
-                var results = DateTimeRecognizer.RecognizeDateTime(utterance, English, refTime: refTime);
+                var culture = turnContext.Activity.Locale == "en-US" ? English : EnglishOthers;
+
+                var results = DateTimeRecognizer.RecognizeDateTime(utterance, culture, refTime: refTime);
 
                 if (results.Any())
                 {

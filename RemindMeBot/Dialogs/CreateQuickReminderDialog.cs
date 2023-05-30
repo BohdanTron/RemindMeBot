@@ -53,7 +53,6 @@ namespace RemindMeBot.Dialogs
             var localDateTime = _clock.GetLocalDateTime(userSettings.TimeZone!).DateTime;
 
             var reminder = ReminderRecognizer.Recognize(input, localDateTime);
-
             if (reminder is null)
             {
                 var notRecognizedMsg = _localizer[ResourceKeys.ReminderNotRecognized];
@@ -81,11 +80,11 @@ namespace RemindMeBot.Dialogs
             var displayDate = reminder.DateTime.ToString("g", CultureInfo.CurrentCulture);
             var reminderAddedMsg = reminder.Interval is null
                 ? _localizer[ResourceKeys.ReminderAdded, reminder.Text, displayDate]
-                : _localizer[ResourceKeys.RepeatedReminderAdded, reminder.Text, displayDate, reminder.Interval!];
+                : _localizer[ResourceKeys.RepeatedReminderAdded, reminder.Text, displayDate, reminder.Interval];
 
             await stepContext.Context.SendActivityAsync(MessageFactory.Text(reminderAddedMsg, reminderAddedMsg), cancellationToken);
 
-            return await stepContext.EndDialogAsync(reminder, cancellationToken);
+            return await stepContext.EndDialogAsync(reminderEntity, cancellationToken);
         }
     }
 }

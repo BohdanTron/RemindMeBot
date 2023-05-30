@@ -32,12 +32,12 @@ namespace RemindMeBot.Tests.Unit.Dialogs
         public MainDialogTests(ITestOutputHelper output) : base(output)
         {
             _sut = new MainDialog(
-                _stateService, 
-                _userSettingsDialog, 
-                _changeUserSettingsDialog, 
+                _stateService,
+                _userSettingsDialog,
+                _changeUserSettingsDialog,
                 _addReminderDialog,
-                _remindersListDialog, 
-                _createQuickReminderDialog, 
+                _remindersListDialog,
+                _createQuickReminderDialog,
                 Localizer);
         }
 
@@ -176,6 +176,56 @@ namespace RemindMeBot.Tests.Unit.Dialogs
 
             // Assert
             reply.Text.Should().Be("What to remind you about?");
+        }
+
+        [Fact]
+        public async Task ShouldBeginRemindersListDialog_WhenListCommand()
+        {
+            // Arrange
+            _remindersListDialog
+                .BeginDialogAsync(Arg.Any<DialogContext>(), Arg.Any<object>(), Arg.Any<CancellationToken>())
+                .Returns(async callInfo =>
+                {
+                    var dialogContext = callInfo.Arg<DialogContext>();
+                    var cancellationToken = callInfo.Arg<CancellationToken>();
+
+                    await dialogContext.Context.SendActivityAsync("Here's the list of your reminders:", cancellationToken: cancellationToken);
+
+                    return await dialogContext.EndDialogAsync(cancellationToken: cancellationToken);
+                });
+
+            var testClient = new DialogTestClient(Channels.Test, _sut, middlewares: Middlewares);
+
+            // Act
+            var reply = await testClient.SendActivityAsync<IMessageActivity>("/list");
+
+            // Assert
+            reply.Text.Should().Be("Here's the list of your reminders:");
+        }
+
+        [Fact]
+        public async Task ShouldEndDialog_WhenReminderWasDeletedFromList()
+        {
+            // Arrange
+            _remindersListDialog
+                .BeginDialogAsync(Arg.Any<DialogContext>(), Arg.Any<object>(), Arg.Any<CancellationToken>())
+                .Returns(async callInfo =>
+                {
+                    var dialogContext = callInfo.Arg<DialogContext>();
+                    var cancellationToken = callInfo.Arg<CancellationToken>();
+
+                    await dialogContext.Context.SendActivityAsync("Here's the list of your reminders:", cancellationToken: cancellationToken);
+
+                    return await dialogContext.EndDialogAsync(new RemindersListDialogResult { ItemDeleted = true },
+                        cancellationToken: cancellationToken);
+                });
+
+            // Act
+            var testClient = new DialogTestClient(Channels.Test, _sut, middlewares: Middlewares);
+            await testClient.SendActivityAsync<IMessageActivity>("/list");
+
+            // Assert
+            testClient.DialogTurnResult.Status.Should().Be(DialogTurnStatus.Complete);
         }
     }
 }

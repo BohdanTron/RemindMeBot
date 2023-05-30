@@ -280,7 +280,7 @@ namespace RemindMeBot.Tests.Unit.Dialogs
         }
 
 
-        public class DateTimeInputVariations
+        private class DateTimeInputVariations
         {
             public static IEnumerable<object[]> ValidDates()
             {

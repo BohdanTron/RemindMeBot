@@ -14,37 +14,55 @@ namespace RemindMeBot.Helpers
 
         public static RecognizedReminder? Recognize(string input, DateTime refDateTime)
         {
-            var results = DateTimeRecognizer.RecognizeDateTime(input, English, DateTimeOptions.TasksMode, refTime: refDateTime);
+            var culture = CultureInfo.CurrentCulture.Name == "en-US" ? English : EnglishOthers;
+
+            var results = DateTimeRecognizer.RecognizeDateTime(input, culture, DateTimeOptions.TasksMode, refTime: refDateTime);
             var result = results.FirstOrDefault();
 
-            if (result is null) return null;
-
-            var values = (List<Dictionary<string, string>>) result.Resolution["values"];
-            var value = values.First();
-
-            var resolution = ReadResolution(value);
-
-            if (resolution.Value is null) return null;
-
-            var text = ExtractTextOnly(input, result);
-            var dateTime = ExtractDateTime(refDateTime, resolution);
-
-            if (dateTime is null) return null;
-            
-            if (resolution.IntervalType is null) return new(text, dateTime.Value, null);
-
-            if (resolution.IntervalSize != 1) return null;
-
-            var interval = resolution.IntervalType switch
+            var values = (List<Dictionary<string, string>>?) result?.Resolution?["values"];
+            if (values is null)
             {
-                "D" => "daily",
-                "W" => "weekly",
-                "M" => "monthly",
-                "Y" => "yearly",
-                _ => throw new ArgumentOutOfRangeException(nameof(resolution.IntervalType))
-            };
-            
-            return new(text, dateTime.Value, interval);
+                return null;
+            }
+
+            var text = ExtractTextOnly(input, result!);
+            if (string.IsNullOrEmpty(text))
+            {
+                return null;
+            }
+
+            foreach (var value in values)
+            {
+                var resolution = ReadResolution(value);
+                
+                var dateTime = ExtractDateTime(refDateTime, resolution);
+                if (dateTime is null)
+                {
+                    continue;
+                }
+
+                if (resolution.IntervalType is null)
+                {
+                    return new(text, dateTime.Value, null);
+                }
+                if (resolution.IntervalSize != 1)
+                {
+                    return null;
+                }
+
+                var interval = resolution.IntervalType switch
+                {
+                    "D" => "daily",
+                    "W" => "weekly",
+                    "M" => "monthly",
+                    "Y" => "yearly",
+                    _ => throw new ArgumentOutOfRangeException(nameof(resolution.IntervalType))
+                };
+
+                return new(text, dateTime.Value, interval);
+            }
+
+            return null;
         }
 
         private static DateTimeResolution ReadResolution(IDictionary<string, string> resolution)
