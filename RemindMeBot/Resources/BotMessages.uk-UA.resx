@@ -167,7 +167,7 @@
 
 - мова - *{0}*
 - місцезнаходження - *{1}*
-- часова пояс - *{2}*
+- часовий пояс - *{2}*
 - місцевий час - *{3}*</value>
   </data>
   <data name="UserSettingsHaveBeenChanged" xml:space="preserve">

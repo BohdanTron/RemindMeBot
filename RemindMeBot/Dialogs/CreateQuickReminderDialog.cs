@@ -68,12 +68,16 @@ namespace RemindMeBot.Dialogs
                 return await stepContext.EndDialogAsync(cancellationToken: cancellationToken);
             }
 
-            var conversation = stepContext.Context.Activity.GetConversationReference();
+            var reminderText = stepContext.Context.Activity.Locale == "en-US"
+                ? reminder.Text
+                : await _translationService.Translate(reminder.Text, from: "en-US", to: "uk-UA");
+
+                var conversation = stepContext.Context.Activity.GetConversationReference();
             var reminderEntity = new ReminderEntity
             {
                 PartitionKey = conversation.User.Id,
                 RowKey = Guid.NewGuid().ToString(),
-                Text = text,
+                Text = reminderText,
                 DueDateTimeLocal = reminder.DateTime.ToString("G", CultureInfo.InvariantCulture),
                 RepeatInterval = reminder.Interval,
                 TimeZone = userSettings.TimeZone!,
@@ -85,8 +89,8 @@ namespace RemindMeBot.Dialogs
 
             var displayDate = reminder.DateTime.ToString("g", CultureInfo.CurrentCulture);
             var reminderAddedMsg = reminder.Interval is null
-                ? _localizer[ResourceKeys.ReminderAdded, text, displayDate]
-                : _localizer[ResourceKeys.RepeatedReminderAdded, text, displayDate, reminder.Interval];
+                ? _localizer[ResourceKeys.ReminderAdded, reminderText, displayDate]
+                : _localizer[ResourceKeys.RepeatedReminderAdded, reminderText, displayDate, reminder.Interval];
 
             await stepContext.Context.SendActivityAsync(MessageFactory.Text(reminderAddedMsg, reminderAddedMsg), cancellationToken);
 
