@@ -51,10 +51,10 @@ namespace RemindMeBot.Dialogs
             var userSettings = await _stateService.UserSettingsPropertyAccessor.GetAsync(stepContext.Context,
                 () => new UserSettings(), cancellationToken);
 
-            var text = stepContext.Context.Activity.Text;
+            var originalText = stepContext.Context.Activity.Text;
             var input = stepContext.Context.Activity.Locale == "en-US"
-                ? text
-                : await _translationService.Translate(text, from: "uk-UA", to: "en-US");
+                ? originalText
+                : await _translationService.Translate(originalText, from: "uk-UA", to: "en-US");
 
             var localDateTime = _clock.GetLocalDateTime(userSettings.TimeZone!).DateTime;
 
@@ -68,11 +68,11 @@ namespace RemindMeBot.Dialogs
                 return await stepContext.EndDialogAsync(cancellationToken: cancellationToken);
             }
 
+            var conversation = stepContext.Context.Activity.GetConversationReference();
             var reminderText = stepContext.Context.Activity.Locale == "en-US"
                 ? reminder.Text
-                : await _translationService.Translate(reminder.Text, from: "en-US", to: "uk-UA");
+                : originalText;
 
-                var conversation = stepContext.Context.Activity.GetConversationReference();
             var reminderEntity = new ReminderEntity
             {
                 PartitionKey = conversation.User.Id,
