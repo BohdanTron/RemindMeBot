@@ -38,7 +38,7 @@ namespace RemindMeBot.Tests.Unit.Dialogs
         }
 
         /// <summary>
-        /// User: /add-reminder
+        /// User: /add
         /// Bot: Please enter the title of the reminder:
         /// User: Take out the trash
         /// Bot: When should I remind you?
@@ -89,7 +89,7 @@ namespace RemindMeBot.Tests.Unit.Dialogs
             var testClient = new DialogTestClient(Channels.Test, _sut, middlewares: Middlewares);
 
             // Act / Assert
-            var reply = await testClient.SendActivityAsync<IMessageActivity>("/add-reminder");
+            var reply = await testClient.SendActivityAsync<IMessageActivity>("/add");
             reply.Text.Should().Be(Localizer[ResourceKeys.AskForReminderText]);
 
             reply = await testClient.SendActivityAsync<IMessageActivity>(reminderText);
@@ -116,7 +116,7 @@ namespace RemindMeBot.Tests.Unit.Dialogs
         }
 
         /// <summary>
-        /// User: /add-reminder
+        /// User: /add
         /// Bot: Please enter the title of the reminder:
         /// User: Take out the trash
         /// Bot: When should I remind you?
@@ -167,7 +167,7 @@ namespace RemindMeBot.Tests.Unit.Dialogs
             var testClient = new DialogTestClient(Channels.Test, _sut, middlewares: Middlewares);
 
             // Act / Assert
-            var reply = await testClient.SendActivityAsync<IMessageActivity>("/add-reminder");
+            var reply = await testClient.SendActivityAsync<IMessageActivity>("/add");
             reply.Text.Should().Be(Localizer[ResourceKeys.AskForReminderText]);
 
             reply = await testClient.SendActivityAsync<IMessageActivity>(reminderText);
@@ -219,7 +219,7 @@ namespace RemindMeBot.Tests.Unit.Dialogs
             var testClient = new DialogTestClient(Channels.Test, _sut, middlewares: Middlewares);
 
             // Act / Assert
-            var reply = await testClient.SendActivityAsync<IMessageActivity>("/add-reminder");
+            var reply = await testClient.SendActivityAsync<IMessageActivity>("/add");
             reply.Text.Should().Be(Localizer[ResourceKeys.AskForReminderText]);
 
             reply = await testClient.SendActivityAsync<IMessageActivity>("Reminder text");
@@ -266,7 +266,7 @@ namespace RemindMeBot.Tests.Unit.Dialogs
             var testClient = new DialogTestClient(Channels.Test, _sut, middlewares: Middlewares);
 
             // Act / Assert
-            var reply = await testClient.SendActivityAsync<IMessageActivity>("/add-reminder");
+            var reply = await testClient.SendActivityAsync<IMessageActivity>("/add");
             reply.Text.Should().Be(Localizer[ResourceKeys.AskForReminderText]);
 
             reply = await testClient.SendActivityAsync<IMessageActivity>("Reminder text");

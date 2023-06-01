@@ -74,10 +74,10 @@ namespace RemindMeBot.Dialogs
 
                     return await stepContext.EndDialogAsync(cancellationToken: cancellationToken);
 
-                case "/my-settings":
+                case "/settings":
                     return await stepContext.BeginDialogAsync(_changeUserSettingsDialog.Id, cancellationToken: cancellationToken);
 
-                case "/add-reminder":
+                case "/add":
                     return await stepContext.BeginDialogAsync(_addReminderDialog.Id, cancellationToken: cancellationToken);
 
                 case "/list":

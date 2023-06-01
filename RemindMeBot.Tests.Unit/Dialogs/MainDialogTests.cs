@@ -147,7 +147,7 @@ namespace RemindMeBot.Tests.Unit.Dialogs
             var testClient = new DialogTestClient(Channels.Test, _sut, middlewares: Middlewares);
 
             // Act
-            var reply = await testClient.SendActivityAsync<IMessageActivity>("/my-settings");
+            var reply = await testClient.SendActivityAsync<IMessageActivity>("/settings");
 
             // Assert
             reply.Text.Should().Be("Your current settings:");
@@ -172,7 +172,7 @@ namespace RemindMeBot.Tests.Unit.Dialogs
             var testClient = new DialogTestClient(Channels.Test, _sut, middlewares: Middlewares);
 
             // Act
-            var reply = await testClient.SendActivityAsync<IMessageActivity>("/add-reminder");
+            var reply = await testClient.SendActivityAsync<IMessageActivity>("/add");
 
             // Assert
             reply.Text.Should().Be("What to remind you about?");

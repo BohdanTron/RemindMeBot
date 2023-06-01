@@ -51,7 +51,7 @@ namespace RemindMeBot.Tests.Unit.Dialogs
             var testClient = new DialogTestClient(Channels.Test, _sut, middlewares: Middlewares);
 
             // Act
-            var reply = await testClient.SendActivityAsync<IMessageActivity>("/my-settings");
+            var reply = await testClient.SendActivityAsync<IMessageActivity>("/settings");
 
             // Assert
             reply.Text.Should().Be(Localizer[ResourceKeys.NoUserSettings]);
@@ -95,7 +95,7 @@ namespace RemindMeBot.Tests.Unit.Dialogs
             // Act / Assert
 
             // Step 1 - Display user's current settings
-            var reply = await testClient.SendActivityAsync<IMessageActivity>("/my-settings");
+            var reply = await testClient.SendActivityAsync<IMessageActivity>("/settings");
             var localTimeCurrentCulture = localDate.ToString("t", new CultureInfo(currentUserCulture));
             var currentUserSettingsMsg = Localizer[ResourceKeys.UserCurrentSettings, currentUserLanguage, userSettings.Location, userSettings.TimeZone, localTimeCurrentCulture];
             reply.Text.Should().Be(currentUserSettingsMsg);
@@ -174,7 +174,7 @@ namespace RemindMeBot.Tests.Unit.Dialogs
             // Act / Assert
 
             // Step 1 - Display user's current settings
-            var reply = await testClient.SendActivityAsync<IMessageActivity>("/my-settings");
+            var reply = await testClient.SendActivityAsync<IMessageActivity>("/settings");
             var currentUserSettingsMsg = Localizer[ResourceKeys.UserCurrentSettings, language, userSettings.Location, userSettings.TimeZone, localTime];
             reply.Text.Should().Be(currentUserSettingsMsg);
 
@@ -241,7 +241,7 @@ namespace RemindMeBot.Tests.Unit.Dialogs
             // Act / Assert
 
             // Step 1 - Display user's current settings
-            var reply = await testClient.SendActivityAsync<IMessageActivity>("/my-settings");
+            var reply = await testClient.SendActivityAsync<IMessageActivity>("/settings");
             var currentUserSettingsMsg = Localizer[ResourceKeys.UserCurrentSettings, language, userSettings.Location, userSettings.TimeZone, localTime];
             reply.Text.Should().Be(currentUserSettingsMsg);
 
