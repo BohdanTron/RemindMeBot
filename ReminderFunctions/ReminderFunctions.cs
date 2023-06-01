@@ -76,7 +76,10 @@ namespace ReminderFunctions
                 logger.LogError(ex, "HTTP request to the proactive message endpoint failed");
             }
 
-            if (reminder.RepeatInterval is null) return true;
+            if (reminder.RepeatInterval is null)
+            {
+                return await context.CallActivityAsync<bool>(nameof(DeleteReminder), reminder);
+            }
 
             await context.CallActivityAsync(nameof(UpdateReminderDate), reminder);
             await context.CallActivityAsync(nameof(PublishMessage), message);
@@ -87,7 +90,8 @@ namespace ReminderFunctions
         [FunctionName(nameof(GetReminder))]
         public static async Task<ReminderEntity?> GetReminder(
             [ActivityTrigger] ReminderCreatedMessage message,
-            [Table("reminders")] TableClient tableClient)
+            [Table("reminders")] TableClient tableClient,
+            ILogger logger)
         {
             try
             {
@@ -95,9 +99,28 @@ namespace ReminderFunctions
 
                 return reminder.HasValue ? reminder.Value : null;
             }
-            catch (RequestFailedException)
+            catch (RequestFailedException ex)
             {
+                logger.LogError(ex, $"Request to get reminder failed, partitionKey = {message.PartitionKey}, rowKey = {message.RowKey}");
                 return null;
+            }
+        }
+
+        [FunctionName(nameof(DeleteReminder))]
+        public static async Task<bool> DeleteReminder(
+            [ActivityTrigger] ReminderEntity reminder,
+            [Table("reminders")] TableClient tableClient,
+            ILogger logger)
+        {
+            try
+            {
+                await tableClient.DeleteEntityAsync(reminder.PartitionKey, reminder.RowKey);
+                return true;
+            }
+            catch (RequestFailedException ex)
+            {
+                logger.LogError(ex, $"Deleting reminder with partitionKey = {reminder.PartitionKey} and rowKey = {reminder.RowKey} failed");
+                return false;
             }
         }
 
