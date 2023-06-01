@@ -11,9 +11,13 @@ namespace RemindMeBot.Services
     public class AzureTranslationService : ITranslationService
     {
         private readonly HttpClient _httpClient;
+        private readonly ILogger _logger;
 
-        public AzureTranslationService(HttpClient httpClient) =>
+        public AzureTranslationService(HttpClient httpClient, ILogger logger)
+        {
             _httpClient = httpClient;
+            _logger = logger;
+        }
 
         public async Task<string> Translate(string text, string from, string to)
         {
@@ -28,6 +32,8 @@ namespace RemindMeBot.Services
 
             var response = await _httpClient.PostAsync(uri, content);
             var responseBody = await response.Content.ReadAsStringAsync();
+
+            _logger.LogInformation($"Translation response body: {responseBody}");
 
             var result = JsonConvert.DeserializeObject<List<Dictionary<string, List<Dictionary<string, string>>>>>(responseBody);
             var translation = result![0]["translations"][0]["text"];

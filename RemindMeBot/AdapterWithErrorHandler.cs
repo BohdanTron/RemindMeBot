@@ -28,7 +28,7 @@ public class AdapterWithErrorHandler : CloudAdapter
             logger.LogError(exception, $"[OnTurnError] unhandled error : {exception.Message}");
 
             // Send a message to the user
-            var errorMsg = localizer[ResourceKeys.UnexpectedError];
+            var errorMsg = localizer[ResourceKeys.UnexpectedError].Value;
             await turnContext.SendActivityAsync(MessageFactory.Text(errorMsg, errorMsg));
 
             if (conversationState is not null)
