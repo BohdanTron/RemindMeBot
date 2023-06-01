@@ -13,7 +13,7 @@ namespace RemindMeBot.Services
         private readonly HttpClient _httpClient;
         private readonly ILogger _logger;
 
-        public AzureTranslationService(HttpClient httpClient, ILogger logger)
+        public AzureTranslationService(HttpClient httpClient, ILogger<AzureTranslationService> logger)
         {
             _httpClient = httpClient;
             _logger = logger;
