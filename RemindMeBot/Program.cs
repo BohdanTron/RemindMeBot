@@ -1,6 +1,7 @@
 using Azure.Storage.Queues;
 using AzureMapsToolkit;
 using Microsoft.Bot.Builder;
+using Microsoft.Bot.Builder.Azure.Blobs;
 using Microsoft.Bot.Builder.Integration.AspNet.Core;
 using Microsoft.Bot.Connector.Authentication;
 using Microsoft.Bot.Schema;
@@ -36,7 +37,7 @@ builder.Services.AddSingleton<ReminderQueueService>();
 // Add Telegram middleware
 builder.Services.AddSingleton<TelegramMiddleware>();
 
-// Add localization
+// Configure localization
 builder.Services.AddLocalization();
 builder.Services.AddSingleton<LocalizationMiddleware>();
 
@@ -60,12 +61,16 @@ builder.Services.AddSingleton<IBotFrameworkHttpAdapter, AdapterWithErrorHandler>
 
 // Configure State
 builder.Services.AddSingleton<IStorage, MemoryStorage>();
+builder.Services.AddSingleton<IStorage>(
+    new BlobsStorage(
+        builder.Configuration["StorageConnectionString:blob"],
+        builder.Configuration["StateContainer"]));
 
 builder.Services.AddSingleton<UserState>();
 builder.Services.AddSingleton<ConversationState>();
 builder.Services.AddSingleton<IStateService, StateService>();
 
-// Add the dialogs with the main bot to the container
+// Add dialogs with the main bot to container
 builder.Services.AddSingleton<UserSettingsDialog>();
 builder.Services.AddSingleton<ChangeUserSettingsDialog>();
 builder.Services.AddSingleton<AddReminderDialog>();
