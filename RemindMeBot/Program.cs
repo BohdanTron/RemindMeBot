@@ -21,6 +21,13 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddSingleton<IClock, Clock>();
 
+// Configure App Insights
+if (!builder.Environment.IsDevelopment())
+{
+    builder.Services.AddApplicationInsightsTelemetry(options => 
+        options.ConnectionString = builder.Configuration["ApplicationInsights:ConnectionString"]);
+}
+
 // Configure Azure Storage Clients
 builder.Services.AddAzureClients(azureBuilder =>
 {
