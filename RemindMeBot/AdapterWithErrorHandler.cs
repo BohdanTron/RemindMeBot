@@ -1,4 +1,5 @@
 using Microsoft.Bot.Builder;
+using Microsoft.Bot.Builder.Integration.ApplicationInsights.Core;
 using Microsoft.Bot.Builder.Integration.AspNet.Core;
 using Microsoft.Bot.Builder.TraceExtensions;
 using Microsoft.Bot.Connector.Authentication;
@@ -12,6 +13,8 @@ public class AdapterWithErrorHandler : CloudAdapter
 {
     public AdapterWithErrorHandler(
         BotFrameworkAuthentication auth,
+        TelemetryInitializerMiddleware telemetryInitializerMiddleware,
+        IBotTelemetryClient botTelemetryClient,
         LocalizationMiddleware localizationMiddleware,
         TelegramMiddleware telegramMiddleware,
         ConversationState? conversationState,
@@ -19,6 +22,7 @@ public class AdapterWithErrorHandler : CloudAdapter
         ILogger<IBotFrameworkHttpAdapter> logger) : base(auth, logger)
 
     {
+        Use(telemetryInitializerMiddleware);
         Use(localizationMiddleware);
         Use(telegramMiddleware);
 
@@ -26,6 +30,7 @@ public class AdapterWithErrorHandler : CloudAdapter
         {
             // Log any leaked exception from the application.
             logger.LogError(exception, $"[OnTurnError] unhandled error : {exception.Message}");
+            botTelemetryClient.TrackException(exception);
 
             // Send a message to the user
             var errorMsg = localizer[ResourceKeys.UnexpectedError].Value;

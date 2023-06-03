@@ -1,7 +1,10 @@
 using Azure.Storage.Queues;
 using AzureMapsToolkit;
+using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.Bot.Builder;
+using Microsoft.Bot.Builder.ApplicationInsights;
 using Microsoft.Bot.Builder.Azure.Blobs;
+using Microsoft.Bot.Builder.Integration.ApplicationInsights.Core;
 using Microsoft.Bot.Builder.Integration.AspNet.Core;
 using Microsoft.Bot.Connector.Authentication;
 using Microsoft.Bot.Schema;
@@ -20,13 +23,6 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddSingleton<IClock, Clock>();
-
-// Configure App Insights
-if (!builder.Environment.IsDevelopment())
-{
-    builder.Services.AddApplicationInsightsTelemetry(options => 
-        options.ConnectionString = builder.Configuration["ApplicationInsights:ConnectionString"]);
-}
 
 // Configure Azure Storage Clients
 builder.Services.AddAzureClients(azureBuilder =>
@@ -65,6 +61,24 @@ builder.Services.AddSingleton<BotFrameworkAuthentication, ConfigurationBotFramew
 
 // Create the Bot Adapter with error handling enabled
 builder.Services.AddSingleton<IBotFrameworkHttpAdapter, AdapterWithErrorHandler>();
+
+// Configure Bot Telemetry via App Insights
+if (!builder.Environment.IsDevelopment())
+{
+    builder.Services.AddApplicationInsightsTelemetry(options =>
+        options.ConnectionString = builder.Configuration["ApplicationInsights:ConnectionString"]);
+
+    builder.Services.AddSingleton<IBotTelemetryClient, BotTelemetryClient>();
+    builder.Services.AddSingleton<ITelemetryInitializer, OperationCorrelationTelemetryInitializer>();
+    builder.Services.AddSingleton<ITelemetryInitializer, TelemetryBotIdInitializer>();
+    builder.Services.AddSingleton<TelemetryInitializerMiddleware>();
+    builder.Services.AddSingleton(sp =>
+    {
+        var telemetryClient = sp.GetService<IBotTelemetryClient>();
+        return new TelemetryLoggerMiddleware(telemetryClient, logPersonalInformation: true);
+    });
+}
+
 
 // Configure State
 builder.Services.AddSingleton<IStorage, MemoryStorage>();
