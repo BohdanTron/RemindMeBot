@@ -2,12 +2,11 @@
 using System.Text.RegularExpressions;
 using Microsoft.Recognizers.Text;
 using Microsoft.Recognizers.Text.DateTime;
+using RemindMeBot.Models;
 using static Microsoft.Recognizers.Text.Culture;
 
 namespace RemindMeBot.Helpers
 {
-    public record RecognizedReminder(string Text, DateTime DateTime, string? Interval);
-
     public static class ReminderRecognizer
     {
         private const string PrepositionsRegex = @"\s+(at|on|in|by|for|after|before|around|until)$";

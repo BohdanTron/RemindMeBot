@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Azure.Data.Tables;
@@ -11,6 +12,7 @@ using Microsoft.Bot.Builder.Dialogs;
 using Microsoft.Bot.Builder.Testing;
 using Microsoft.Bot.Connector;
 using Microsoft.Bot.Schema;
+using Microsoft.Extensions.Logging;
 using NSubstitute;
 using RemindMeBot.Dialogs;
 using RemindMeBot.Models;
@@ -27,14 +29,15 @@ namespace RemindMeBot.Tests.Unit.Dialogs
         private readonly CreateQuickReminderDialog _sut;
 
         private readonly IStateService _stateService = Substitute.For<IStateService>();
-        private readonly ITranslationService _translationService = Substitute.For<ITranslationService>();
         private readonly IClock _clock = Substitute.For<IClock>();
         private readonly ReminderTableService _reminderTableService = Substitute.ForPartsOf<ReminderTableService>(Substitute.For<TableServiceClient>());
         private readonly ReminderQueueService _reminderQueueService = Substitute.ForPartsOf<ReminderQueueService>(Substitute.For<QueueServiceClient>());
 
+        private readonly OpenAiService _openAiService = Substitute.ForPartsOf<OpenAiService>(Substitute.For<HttpClient>(), Substitute.For<ILogger<OpenAiService>>());
+
         public CreateQuickReminderDialogTests(ITestOutputHelper output) : base(output)
         {
-            _sut = new CreateQuickReminderDialog(_stateService, _translationService, _clock, _reminderTableService, _reminderQueueService, Localizer);
+            _sut = new CreateQuickReminderDialog(_stateService, _clock, _reminderTableService, _reminderQueueService, _openAiService, Localizer);
         }
 
 

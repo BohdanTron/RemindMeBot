@@ -13,27 +13,28 @@ namespace RemindMeBot.Dialogs
     public class CreateQuickReminderDialog : CancelDialog
     {
         private readonly IStateService _stateService;
-        private readonly ITranslationService _translationService;
         private readonly IClock _clock;
 
         private readonly ReminderTableService _reminderTableService;
         private readonly ReminderQueueService _reminderQueueService;
 
+        private readonly OpenAiService _openAiService;
+
         private readonly IStringLocalizer<BotMessages> _localizer;
 
         public CreateQuickReminderDialog(
             IStateService stateService,
-            ITranslationService translationService,
             IClock clock,
             ReminderTableService reminderTableService,
             ReminderQueueService reminderQueueService,
+            OpenAiService openAiService,
             IStringLocalizer<BotMessages> localizer) : base(nameof(CreateQuickReminderDialog), stateService, localizer)
         {
             _stateService = stateService;
-            _translationService = translationService;
             _clock = clock;
             _reminderTableService = reminderTableService;
             _reminderQueueService = reminderQueueService;
+            _openAiService = openAiService;
             _localizer = localizer;
 
             AddDialog(new WaterfallDialog($"{nameof(CreateQuickReminderDialog)}.main",
@@ -51,14 +52,13 @@ namespace RemindMeBot.Dialogs
             var userSettings = await _stateService.UserSettingsPropertyAccessor.GetAsync(stepContext.Context,
                 () => new UserSettings(), cancellationToken);
 
-            var originalText = stepContext.Context.Activity.Text;
-            var input = stepContext.Context.Activity.Locale == "en-US"
-                ? originalText
-                : await _translationService.Translate(originalText, from: "uk-UA", to: "en-US");
-
+            var input = stepContext.Context.Activity.Text;
             var localDateTime = _clock.GetLocalDateTime(userSettings.TimeZone!).DateTime;
 
-            var reminder = ReminderRecognizer.Recognize(input, localDateTime);
+            var reminder = stepContext.Context.Activity.Locale == "uk-UA"
+                ? await _openAiService.RecognizeReminder(input, localDateTime)
+                : ReminderRecognizer.Recognize(input, localDateTime);
+            
             if (reminder is null)
             {
                 var notRecognizedMsg = _localizer[ResourceKeys.ReminderNotRecognized];
@@ -67,19 +67,14 @@ namespace RemindMeBot.Dialogs
 
                 return await stepContext.EndDialogAsync(cancellationToken: cancellationToken);
             }
-
             var conversation = stepContext.Context.Activity.GetConversationReference();
-            var reminderText = stepContext.Context.Activity.Locale == "en-US"
-                ? reminder.Text
-                : originalText;
-
             var reminderEntity = new ReminderEntity
             {
                 PartitionKey = conversation.User.Id,
                 RowKey = Guid.NewGuid().ToString(),
-                Text = reminderText,
+                Text = reminder.Text,
                 DueDateTimeLocal = reminder.DateTime.ToString("G", CultureInfo.InvariantCulture),
-                RepeatInterval = reminder.Interval,
+                RepeatInterval = reminder.RepeatedInterval,
                 TimeZone = userSettings.TimeZone!,
                 ConversationReference = JsonConvert.SerializeObject(conversation)
             };
@@ -88,9 +83,18 @@ namespace RemindMeBot.Dialogs
             await _reminderQueueService.PublishCreatedMessage(reminderEntity, cancellationToken);
 
             var displayDate = reminder.DateTime.ToString("g", CultureInfo.CurrentCulture);
-            var reminderAddedMsg = reminder.Interval is null
-                ? _localizer[ResourceKeys.ReminderAdded, reminderText, displayDate]
-                : _localizer[ResourceKeys.RepeatedReminderAdded, reminderText, displayDate, reminder.Interval];
+            var displayInterval = reminder.RepeatedInterval switch
+            {
+                "daily" => _localizer[ResourceKeys.Daily],
+                "weekly" => _localizer[ResourceKeys.Weekly],
+                "monthly" => _localizer[ResourceKeys.Monthly],
+                "yearly" => _localizer[ResourceKeys.Yearly],
+                _ => null
+            };
+
+            var reminderAddedMsg = displayInterval is null
+                ? _localizer[ResourceKeys.ReminderAdded, reminder.Text, displayDate]
+                : _localizer[ResourceKeys.RepeatedReminderAdded, reminder.Text, displayDate, displayInterval];
 
             await stepContext.Context.SendActivityAsync(MessageFactory.Text(reminderAddedMsg, reminderAddedMsg), cancellationToken);
 

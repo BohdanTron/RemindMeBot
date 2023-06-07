@@ -56,6 +56,13 @@ builder.Services.AddHttpClient<ITranslationService, AzureTranslationService>(cli
     client.DefaultRequestHeaders.Add("Ocp-Apim-Subscription-Region", builder.Configuration["Translation:Location"]);
 });
 
+// Configure OpenAI service
+builder.Services.AddHttpClient<OpenAiService>(client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration["OpenAI:BaseAddress"]);
+    client.DefaultRequestHeaders.Add("Authorization", $"Bearer {builder.Configuration["OpenAI:ApiKey"]}");
+});
+
 // Create the Bot Framework Authentication to be used with the Bot Adapter
 builder.Services.AddSingleton<BotFrameworkAuthentication, ConfigurationBotFrameworkAuthentication>();
 
@@ -63,22 +70,18 @@ builder.Services.AddSingleton<BotFrameworkAuthentication, ConfigurationBotFramew
 builder.Services.AddSingleton<IBotFrameworkHttpAdapter, AdapterWithErrorHandler>();
 
 // Configure Bot Telemetry via App Insights
-if (!builder.Environment.IsDevelopment())
+builder.Services.AddApplicationInsightsTelemetry(options =>
+    options.ConnectionString = builder.Configuration["ApplicationInsights:ConnectionString"]);
+
+builder.Services.AddSingleton<IBotTelemetryClient, BotTelemetryClient>();
+builder.Services.AddSingleton<ITelemetryInitializer, OperationCorrelationTelemetryInitializer>();
+builder.Services.AddSingleton<ITelemetryInitializer, TelemetryBotIdInitializer>();
+builder.Services.AddSingleton<TelemetryInitializerMiddleware>();
+builder.Services.AddSingleton(sp =>
 {
-    builder.Services.AddApplicationInsightsTelemetry(options =>
-        options.ConnectionString = builder.Configuration["ApplicationInsights:ConnectionString"]);
-
-    builder.Services.AddSingleton<IBotTelemetryClient, BotTelemetryClient>();
-    builder.Services.AddSingleton<ITelemetryInitializer, OperationCorrelationTelemetryInitializer>();
-    builder.Services.AddSingleton<ITelemetryInitializer, TelemetryBotIdInitializer>();
-    builder.Services.AddSingleton<TelemetryInitializerMiddleware>();
-    builder.Services.AddSingleton(sp =>
-    {
-        var telemetryClient = sp.GetService<IBotTelemetryClient>();
-        return new TelemetryLoggerMiddleware(telemetryClient, logPersonalInformation: true);
-    });
-}
-
+    var telemetryClient = sp.GetService<IBotTelemetryClient>();
+    return new TelemetryLoggerMiddleware(telemetryClient, logPersonalInformation: true);
+});
 
 // Configure State
 builder.Services.AddSingleton<IStorage, MemoryStorage>();
