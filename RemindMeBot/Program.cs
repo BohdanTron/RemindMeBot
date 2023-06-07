@@ -15,6 +15,7 @@ using RemindMeBot.Bots;
 using RemindMeBot.Dialogs;
 using RemindMeBot.Middlewares;
 using RemindMeBot.Services;
+using RemindMeBot.Services.Recognizers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -56,12 +57,14 @@ builder.Services.AddHttpClient<ITranslationService, AzureTranslationService>(cli
     client.DefaultRequestHeaders.Add("Ocp-Apim-Subscription-Region", builder.Configuration["Translation:Location"]);
 });
 
-// Configure OpenAI service
-builder.Services.AddHttpClient<OpenAiService>(client =>
+// Configure recognizers
+builder.Services.AddHttpClient<IReminderRecognizer, OpenAiRecognizer>(client =>
 {
     client.BaseAddress = new Uri(builder.Configuration["OpenAI:BaseAddress"]);
     client.DefaultRequestHeaders.Add("Authorization", $"Bearer {builder.Configuration["OpenAI:ApiKey"]}");
 });
+builder.Services.AddSingleton<IReminderRecognizer, MicrosoftRecognizer>();
+builder.Services.AddSingleton<ReminderRecognizersFactory>();
 
 // Create the Bot Framework Authentication to be used with the Bot Adapter
 builder.Services.AddSingleton<BotFrameworkAuthentication, ConfigurationBotFrameworkAuthentication>();

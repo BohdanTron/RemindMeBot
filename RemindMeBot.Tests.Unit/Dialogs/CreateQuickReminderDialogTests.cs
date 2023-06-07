@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Azure.Data.Tables;
@@ -12,12 +11,13 @@ using Microsoft.Bot.Builder.Dialogs;
 using Microsoft.Bot.Builder.Testing;
 using Microsoft.Bot.Connector;
 using Microsoft.Bot.Schema;
-using Microsoft.Extensions.Logging;
+using Microsoft.Recognizers.Text;
 using NSubstitute;
 using RemindMeBot.Dialogs;
 using RemindMeBot.Models;
 using RemindMeBot.Resources;
 using RemindMeBot.Services;
+using RemindMeBot.Services.Recognizers;
 using RemindMeBot.Tests.Unit.Common;
 using Xunit;
 using Xunit.Abstractions;
@@ -33,11 +33,11 @@ namespace RemindMeBot.Tests.Unit.Dialogs
         private readonly ReminderTableService _reminderTableService = Substitute.ForPartsOf<ReminderTableService>(Substitute.For<TableServiceClient>());
         private readonly ReminderQueueService _reminderQueueService = Substitute.ForPartsOf<ReminderQueueService>(Substitute.For<QueueServiceClient>());
 
-        private readonly OpenAiService _openAiService = Substitute.ForPartsOf<OpenAiService>(Substitute.For<HttpClient>(), Substitute.For<ILogger<OpenAiService>>());
+        private readonly ReminderRecognizersFactory _recognizersFactory = Substitute.ForPartsOf<ReminderRecognizersFactory>(new List<IReminderRecognizer> { Substitute.For<IReminderRecognizer>() });
 
         public CreateQuickReminderDialogTests(ITestOutputHelper output) : base(output)
         {
-            _sut = new CreateQuickReminderDialog(_stateService, _clock, _reminderTableService, _reminderQueueService, _openAiService, Localizer);
+            _sut = new CreateQuickReminderDialog(_stateService, _clock, _reminderTableService, _reminderQueueService, _recognizersFactory, Localizer);
         }
 
 
@@ -63,6 +63,9 @@ namespace RemindMeBot.Tests.Unit.Dialogs
             _clock.GetLocalDateTime(Arg.Any<string>())
                 .Returns(today);
 
+            _recognizersFactory.CreateRecognizer(Arg.Any<string>())
+                .Returns(new MicrosoftRecognizer());
+
             _reminderTableService.Add(Arg.Any<ReminderEntity>(), Arg.Any<CancellationToken>())
                 .Returns(Task.CompletedTask);
 
@@ -78,6 +81,9 @@ namespace RemindMeBot.Tests.Unit.Dialogs
 
             // Act / Assert
             var reply = await testClient.SendActivityAsync<IMessageActivity>(input);
+            reply.Type.Should().Be(ActivityTypes.Typing);
+
+            reply = testClient.GetNextReply<IMessageActivity>();
             reply.Text.Should().Be(expectedReply);
 
             // Check dialog result
@@ -109,6 +115,9 @@ namespace RemindMeBot.Tests.Unit.Dialogs
                     Location = "Test Location"
                 });
 
+            _recognizersFactory.CreateRecognizer(Arg.Any<string>())
+                .Returns(new MicrosoftRecognizer());
+
             _clock.GetLocalDateTime(Arg.Any<string>())
                 .Returns(today);
 
@@ -116,6 +125,9 @@ namespace RemindMeBot.Tests.Unit.Dialogs
 
             // Act / Assert
             var reply = await testClient.SendActivityAsync<IMessageActivity>(input);
+            reply.Type.Should().Be(ActivityTypes.Typing);
+
+            reply = testClient.GetNextReply<IMessageActivity>();
             reply.Text.Should().Be(Localizer[ResourceKeys.ReminderNotRecognized]);
 
             testClient.DialogTurnResult.Status.Should().Be(DialogTurnStatus.Complete);

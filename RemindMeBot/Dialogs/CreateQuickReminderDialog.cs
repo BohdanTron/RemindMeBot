@@ -1,12 +1,13 @@
 ﻿using System.Globalization;
 using Microsoft.Bot.Builder;
 using Microsoft.Bot.Builder.Dialogs;
+using Microsoft.Bot.Schema;
 using Microsoft.Extensions.Localization;
 using Newtonsoft.Json;
-using RemindMeBot.Helpers;
 using RemindMeBot.Models;
 using RemindMeBot.Resources;
 using RemindMeBot.Services;
+using RemindMeBot.Services.Recognizers;
 
 namespace RemindMeBot.Dialogs
 {
@@ -18,7 +19,7 @@ namespace RemindMeBot.Dialogs
         private readonly ReminderTableService _reminderTableService;
         private readonly ReminderQueueService _reminderQueueService;
 
-        private readonly OpenAiService _openAiService;
+        private readonly ReminderRecognizersFactory _recognizersFactory;
 
         private readonly IStringLocalizer<BotMessages> _localizer;
 
@@ -27,15 +28,16 @@ namespace RemindMeBot.Dialogs
             IClock clock,
             ReminderTableService reminderTableService,
             ReminderQueueService reminderQueueService,
-            OpenAiService openAiService,
+            ReminderRecognizersFactory recognizersFactory,
             IStringLocalizer<BotMessages> localizer) : base(nameof(CreateQuickReminderDialog), stateService, localizer)
         {
             _stateService = stateService;
             _clock = clock;
             _reminderTableService = reminderTableService;
             _reminderQueueService = reminderQueueService;
-            _openAiService = openAiService;
+            _recognizersFactory = recognizersFactory;
             _localizer = localizer;
+            _recognizersFactory = recognizersFactory;
 
             AddDialog(new WaterfallDialog($"{nameof(CreateQuickReminderDialog)}.main",
                 new WaterfallStep[]
@@ -55,10 +57,12 @@ namespace RemindMeBot.Dialogs
             var input = stepContext.Context.Activity.Text;
             var localDateTime = _clock.GetLocalDateTime(userSettings.TimeZone!).DateTime;
 
-            var reminder = stepContext.Context.Activity.Locale == "uk-UA"
-                ? await _openAiService.RecognizeReminder(input, localDateTime)
-                : ReminderRecognizer.Recognize(input, localDateTime);
-            
+            var recognizer = _recognizersFactory.CreateRecognizer(stepContext.Context.Activity.Locale);
+            var reminderTask = recognizer.RecognizeReminder(input, localDateTime);
+
+            await stepContext.Context.SendActivityAsync(new Activity { Type = ActivityTypes.Typing }, cancellationToken);
+
+            var reminder = await reminderTask;
             if (reminder is null)
             {
                 var notRecognizedMsg = _localizer[ResourceKeys.ReminderNotRecognized];

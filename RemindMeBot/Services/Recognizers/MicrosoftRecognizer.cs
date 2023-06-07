@@ -5,35 +5,37 @@ using Microsoft.Recognizers.Text.DateTime;
 using RemindMeBot.Models;
 using static Microsoft.Recognizers.Text.Culture;
 
-namespace RemindMeBot.Helpers
+namespace RemindMeBot.Services.Recognizers
 {
-    public static class ReminderRecognizer
+    public class MicrosoftRecognizer : IReminderRecognizer
     {
         private const string PrepositionsRegex = @"\s+(at|on|in|by|for|after|before|around|until)$";
 
-        public static RecognizedReminder? Recognize(string input, DateTime refDateTime)
+        public string[] SupportedCultures { get; } = { "en-US" };
+
+        public Task<RecognizedReminder?> RecognizeReminder(string input, DateTime refDateTime)
         {
             var culture = CultureInfo.CurrentCulture.Name == "en-US" ? English : EnglishOthers;
 
             var results = DateTimeRecognizer.RecognizeDateTime(input, culture, DateTimeOptions.TasksMode, refTime: refDateTime);
             var result = results.FirstOrDefault();
 
-            var values = (List<Dictionary<string, string>>?) result?.Resolution?["values"];
+            var values = (List<Dictionary<string, string>>?)result?.Resolution?["values"];
             if (values is null)
             {
-                return null;
+                return Task.FromResult<RecognizedReminder?>(null);
             }
 
             var text = ExtractTextOnly(input, result!);
             if (string.IsNullOrEmpty(text))
             {
-                return null;
+                return Task.FromResult<RecognizedReminder?>(null);
             }
 
             foreach (var value in values)
             {
                 var resolution = ReadResolution(value);
-                
+
                 var dateTime = ExtractDateTime(refDateTime, resolution);
                 if (dateTime is null)
                 {
@@ -42,11 +44,11 @@ namespace RemindMeBot.Helpers
 
                 if (resolution.IntervalType is null)
                 {
-                    return new(text, dateTime.Value, null);
+                    return Task.FromResult<RecognizedReminder?>(new RecognizedReminder(text, dateTime.Value, null));
                 }
                 if (resolution.IntervalSize != 1)
                 {
-                    return null;
+                    return Task.FromResult<RecognizedReminder?>(null);
                 }
 
                 var interval = resolution.IntervalType switch
@@ -58,10 +60,10 @@ namespace RemindMeBot.Helpers
                     _ => throw new ArgumentOutOfRangeException(nameof(resolution.IntervalType))
                 };
 
-                return new(text, dateTime.Value, interval);
+                return Task.FromResult<RecognizedReminder?>(new RecognizedReminder(text, dateTime.Value, interval));
             }
 
-            return null;
+            return Task.FromResult<RecognizedReminder?>(null);
         }
 
         private static DateTimeResolution ReadResolution(IDictionary<string, string> resolution)

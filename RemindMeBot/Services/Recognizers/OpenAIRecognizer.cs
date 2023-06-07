@@ -4,9 +4,9 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using RemindMeBot.Models;
 
-namespace RemindMeBot.Services
+namespace RemindMeBot.Services.Recognizers
 {
-    public class OpenAiService
+    public class OpenAiRecognizer : IReminderRecognizer
     {
         private const string SystemPrompt =
             "You're an AI for a Ukrainian bot. Parse tasks (raw text without datetime part), reminder dates (various formats), and reference dates ('yyyy-mm-dd HH:mm:ss'). " +
@@ -16,7 +16,9 @@ namespace RemindMeBot.Services
         private readonly HttpClient _httpClient;
         private readonly ILogger _logger;
 
-        public OpenAiService(HttpClient httpClient, ILogger<OpenAiService> logger)
+        public string[] SupportedCultures { get; } = { "uk-UA" };
+
+        public OpenAiRecognizer(HttpClient httpClient, ILogger<OpenAiRecognizer> logger)
         {
             _httpClient = httpClient;
             _logger = logger;
