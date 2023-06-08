@@ -20,6 +20,7 @@ namespace RemindMeBot.Dialogs
         private readonly ReminderQueueService _reminderQueueService;
 
         private readonly ReminderRecognizersFactory _recognizersFactory;
+        private readonly RepeatedIntervalMapper _repeatedIntervalMapper;
 
         private readonly IStringLocalizer<BotMessages> _localizer;
 
@@ -29,6 +30,7 @@ namespace RemindMeBot.Dialogs
             ReminderTableService reminderTableService,
             ReminderQueueService reminderQueueService,
             ReminderRecognizersFactory recognizersFactory,
+            RepeatedIntervalMapper repeatedIntervalMapper,
             IStringLocalizer<BotMessages> localizer) : base(nameof(CreateQuickReminderDialog), stateService, localizer)
         {
             _stateService = stateService;
@@ -36,8 +38,10 @@ namespace RemindMeBot.Dialogs
             _reminderTableService = reminderTableService;
             _reminderQueueService = reminderQueueService;
             _recognizersFactory = recognizersFactory;
-            _localizer = localizer;
             _recognizersFactory = recognizersFactory;
+            _repeatedIntervalMapper = repeatedIntervalMapper;
+            _localizer = localizer;
+            
 
             AddDialog(new WaterfallDialog($"{nameof(CreateQuickReminderDialog)}.main",
                 new WaterfallStep[]
@@ -78,7 +82,7 @@ namespace RemindMeBot.Dialogs
                 RowKey = Guid.NewGuid().ToString(),
                 Text = reminder.Text,
                 DueDateTimeLocal = reminder.DateTime.ToString("G", CultureInfo.InvariantCulture),
-                RepeatInterval = reminder.RepeatedInterval,
+                RepeatedInterval = reminder.RepeatedInterval,
                 TimeZone = userSettings.TimeZone!,
                 ConversationReference = JsonConvert.SerializeObject(conversation)
             };
@@ -87,14 +91,7 @@ namespace RemindMeBot.Dialogs
             await _reminderQueueService.PublishCreatedMessage(reminderEntity, cancellationToken);
 
             var displayDate = reminder.DateTime.ToString("g", CultureInfo.CurrentCulture);
-            var displayInterval = reminder.RepeatedInterval switch
-            {
-                "daily" => _localizer[ResourceKeys.Daily],
-                "weekly" => _localizer[ResourceKeys.Weekly],
-                "monthly" => _localizer[ResourceKeys.Monthly],
-                "yearly" => _localizer[ResourceKeys.Yearly],
-                _ => null
-            };
+            var displayInterval = _repeatedIntervalMapper.MapToLocalizedString(reminder.RepeatedInterval);
 
             var reminderAddedMsg = displayInterval is null
                 ? _localizer[ResourceKeys.ReminderAdded, reminder.Text, displayDate]

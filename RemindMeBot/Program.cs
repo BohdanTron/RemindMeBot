@@ -24,6 +24,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddSingleton<IClock, Clock>();
+builder.Services.AddSingleton<RepeatedIntervalMapper>();
 
 // Configure Azure Storage Clients
 builder.Services.AddAzureClients(azureBuilder =>

@@ -9,18 +9,23 @@ namespace RemindMeBot.Services.Recognizers
     public class OpenAiRecognizer : IReminderRecognizer
     {
         private const string SystemPrompt =
-            "You're an AI for a Ukrainian bot. Parse tasks (raw text without datetime part), reminder dates (various formats), and reference dates ('yyyy-mm-dd HH:mm:ss'). " +
-            "Output JSON with 'text', 'datetime', and 'repeatedInterval' ('daily', 'weekly', 'monthly', 'yearly', null). " +
+            "You're an AI for a Ukrainian bot. Parse tasks (raw text without datetime part), reminder dates (various formats), and reference dates ('MM/dd/yyyy HH:mm:ss'). " +
+            "Output JSON with 'text', 'datetime', and 'repeatedInterval' ('daily', 'weekly', 'monthly', 'yearly', 'none'). " +
             "Reminder date and time should be future to reference date. Invalid input yields null.";
 
         private readonly HttpClient _httpClient;
+        private readonly RepeatedIntervalMapper _repeatedIntervalMapper;
         private readonly ILogger _logger;
 
         public string[] SupportedCultures { get; } = { "uk-UA" };
 
-        public OpenAiRecognizer(HttpClient httpClient, ILogger<OpenAiRecognizer> logger)
+        public OpenAiRecognizer(
+            HttpClient httpClient, 
+            RepeatedIntervalMapper repeatedIntervalMapper,
+            ILogger<OpenAiRecognizer> logger)
         {
             _httpClient = httpClient;
+            _repeatedIntervalMapper = repeatedIntervalMapper;
             _logger = logger;
         }
 
@@ -45,9 +50,9 @@ namespace RemindMeBot.Services.Recognizers
                     })
             };
 
-            var content = new StringContent(body.ToString(), Encoding.UTF8, "application/json");
+            var httpContent = new StringContent(body.ToString(), Encoding.UTF8, "application/json");
 
-            var response = await _httpClient.PostAsync("/v1/chat/completions", content);
+            var response = await _httpClient.PostAsync("/v1/chat/completions", httpContent);
             var responseBody = await response.Content.ReadAsStringAsync();
 
             _logger.LogInformation($"OpenAI response body: {responseBody}");
@@ -55,13 +60,22 @@ namespace RemindMeBot.Services.Recognizers
             try
             {
                 var openAiResponse = JsonConvert.DeserializeObject<OpenAiResponse?>(responseBody);
+                
                 var message = openAiResponse?.Choices[0].Message;
+                if (message is null)
+                {
+                    return null;
+                }
 
-                if (message is null) return null;
+                var content = JsonConvert.DeserializeObject<Content?>(message.Content);
+                if (content is null)
+                {
+                    return null;
+                }
 
-                var reminder = JsonConvert.DeserializeObject<RecognizedReminder?>(message.Content);
+                var interval = _repeatedIntervalMapper.MapToEnum(content.RepeatedInterval);
 
-                return reminder;
+                return new RecognizedReminder(content.Text, content.DateTime, interval);
             }
             catch
             {
@@ -119,5 +133,17 @@ namespace RemindMeBot.Services.Recognizers
 
         [JsonProperty("total_tokens")]
         public int TotalTokens { get; init; }
+    }
+
+    public record Content
+    {
+        [JsonProperty("text")]
+        public string Text { get; init; } = default!;
+
+        [JsonProperty("datetime")]
+        public DateTime DateTime { get; init; }
+
+        [JsonProperty("repeatedInterval")]
+        public string RepeatedInterval { get; init; } = default!;
     }
 }

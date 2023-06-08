@@ -34,7 +34,8 @@ namespace RemindMeBot.Tests.Unit.Dialogs
 
         public AddReminderDialogTests(ITestOutputHelper output) : base(output)
         {
-            _sut = new AddReminderDialog(_stateService, _translationService, _clock, _reminderTableService, _reminderQueueService, Localizer);
+            _sut = new AddReminderDialog(_stateService, _translationService, _clock, _reminderTableService,
+                _reminderQueueService, new RepeatedIntervalMapper(Localizer), Localizer);
         }
 
         /// <summary>
@@ -111,7 +112,6 @@ namespace RemindMeBot.Tests.Unit.Dialogs
             result.PartitionKey.Should().Be(conversation.User.Id);
             result.Text.Should().Be(reminderText);
             result.DueDateTimeLocal.Should().Be(reminderDateTime.ToString("G", CultureInfo.InvariantCulture));
-            result.RepeatInterval.Should().Be(repeatInterval);
             result.TimeZone.Should().Be(userSettings.TimeZone);
         }
 
@@ -161,7 +161,7 @@ namespace RemindMeBot.Tests.Unit.Dialogs
 
             _clock.GetLocalDateTime(timeZone)
                 .Returns(localDateTime);
-                
+
             var reminderDateTime = localDateTime.AddDays(1).Date.AddHours(14);
 
             var testClient = new DialogTestClient(Channels.Test, _sut, middlewares: Middlewares);
@@ -186,7 +186,6 @@ namespace RemindMeBot.Tests.Unit.Dialogs
             result.PartitionKey.Should().Be(conversation.User.Id);
             result.Text.Should().Be(reminderText);
             result.DueDateTimeLocal.Should().Be(reminderDateTime.ToString("G", CultureInfo.InvariantCulture));
-            result.RepeatInterval.Should().BeNull();
         }
 
         [Theory]
@@ -238,7 +237,6 @@ namespace RemindMeBot.Tests.Unit.Dialogs
             result.PartitionKey.Should().Be(conversation.User.Id);
             result.Text.Should().Be("Reminder text");
             result.DueDateTimeLocal.Should().Be(expectedReminderDate.ToString("G", CultureInfo.InvariantCulture));
-            result.RepeatInterval.Should().BeNull();
         }
 
         [Theory]

@@ -57,7 +57,7 @@ namespace RemindMeBot.Middlewares
                     new JObject
                     {
                         ["text"] = action.Title,
-                        ["callback_data"] = action.Value?.ToString() ?? action.Title,
+                        ["callback_data"] = action.Value?.ToString() ?? action.Title
                     })
                 ));
 

@@ -76,7 +76,7 @@ namespace ReminderFunctions
                 logger.LogError(ex, "HTTP request to the proactive message endpoint failed");
             }
 
-            if (reminder.RepeatInterval is null)
+            if (reminder.RepeatInterval == RepeatedInterval.None)
             {
                 return await context.CallActivityAsync<bool>(nameof(DeleteReminder), reminder);
             }
@@ -132,12 +132,12 @@ namespace ReminderFunctions
         {
             var currentDateTime = DateTime.ParseExact(reminder.DueDateTimeLocal, "G", CultureInfo.InvariantCulture, DateTimeStyles.None);
 
-            var nextDateTime = reminder.RepeatInterval!.ToLowerInvariant() switch
+            var nextDateTime = reminder.RepeatInterval switch
             {
-                "daily" => currentDateTime.AddDays(1),
-                "weekly" => currentDateTime.AddDays(7),
-                "monthly" => currentDateTime.AddMonths(1),
-                "yearly" => currentDateTime.AddYears(1),
+                RepeatedInterval.Daily => currentDateTime.AddDays(1),
+                RepeatedInterval.Weekly => currentDateTime.AddDays(7),
+                RepeatedInterval.Monthly => currentDateTime.AddMonths(1),
+                RepeatedInterval.Yearly => currentDateTime.AddYears(1),
                 _ => throw new InvalidOperationException($"Unsupported repeat interval: {reminder.RepeatInterval}")
             };
             reminder.DueDateTimeLocal = nextDateTime.ToString("G", CultureInfo.InvariantCulture);
@@ -164,6 +164,15 @@ namespace ReminderFunctions
 
         public string DueDateTimeLocal { get; set; } = default!;
         public string TimeZone { get; set; } = default!;
-        public string? RepeatInterval { get; set; }
+        public RepeatedInterval RepeatInterval { get; set; }
+    }
+
+    public enum RepeatedInterval
+    {
+        None = 0,
+        Daily = 1,
+        Weekly = 2,
+        Monthly = 3,
+        Yearly = 4
     }
 }

@@ -19,6 +19,8 @@ namespace RemindMeBot.Dialogs
         private readonly ReminderTableService _reminderTableService;
         private readonly ReminderQueueService _reminderQueueService;
 
+        private readonly RepeatedIntervalMapper _repeatedIntervalMapper;
+
         private readonly IStringLocalizer<BotMessages> _localizer;
 
         public AddReminderDialog(
@@ -27,12 +29,14 @@ namespace RemindMeBot.Dialogs
             IClock clock,
             ReminderTableService reminderTableService,
             ReminderQueueService reminderQueueService,
+            RepeatedIntervalMapper repeatedIntervalMapper,
             IStringLocalizer<BotMessages> localizer) : base(nameof(AddReminderDialog), stateService, localizer)
         {
             _stateService = stateService;
             _clock = clock;
             _reminderTableService = reminderTableService;
             _reminderQueueService = reminderQueueService;
+            _repeatedIntervalMapper = repeatedIntervalMapper;
             _localizer = localizer;
 
             AddDialog(new TextPrompt($"{nameof(AddReminderDialog)}.reminderText"));
@@ -184,7 +188,7 @@ namespace RemindMeBot.Dialogs
                 RowKey = Guid.NewGuid().ToString(),
                 Text = text,
                 DueDateTimeLocal = date.ToString("G", CultureInfo.InvariantCulture),
-                RepeatInterval = repeatInterval,
+                RepeatedInterval = _repeatedIntervalMapper.MapToEnumFromLocalized(repeatInterval),
                 TimeZone = userSettings.TimeZone!,
                 ConversationReference = JsonConvert.SerializeObject(conversation)
             };

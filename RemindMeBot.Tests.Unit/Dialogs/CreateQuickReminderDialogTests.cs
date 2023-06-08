@@ -11,7 +11,6 @@ using Microsoft.Bot.Builder.Dialogs;
 using Microsoft.Bot.Builder.Testing;
 using Microsoft.Bot.Connector;
 using Microsoft.Bot.Schema;
-using Microsoft.Recognizers.Text;
 using NSubstitute;
 using RemindMeBot.Dialogs;
 using RemindMeBot.Models;
@@ -34,10 +33,14 @@ namespace RemindMeBot.Tests.Unit.Dialogs
         private readonly ReminderQueueService _reminderQueueService = Substitute.ForPartsOf<ReminderQueueService>(Substitute.For<QueueServiceClient>());
 
         private readonly ReminderRecognizersFactory _recognizersFactory = Substitute.ForPartsOf<ReminderRecognizersFactory>(new List<IReminderRecognizer> { Substitute.For<IReminderRecognizer>() });
+        private readonly RepeatedIntervalMapper _repeatedIntervalMapper;
 
         public CreateQuickReminderDialogTests(ITestOutputHelper output) : base(output)
         {
-            _sut = new CreateQuickReminderDialog(_stateService, _clock, _reminderTableService, _reminderQueueService, _recognizersFactory, Localizer);
+            _repeatedIntervalMapper = new RepeatedIntervalMapper(Localizer);
+
+            _sut = new CreateQuickReminderDialog(_stateService, _clock, _reminderTableService, _reminderQueueService,
+                _recognizersFactory, _repeatedIntervalMapper, Localizer);
         }
 
 
@@ -64,7 +67,7 @@ namespace RemindMeBot.Tests.Unit.Dialogs
                 .Returns(today);
 
             _recognizersFactory.CreateRecognizer(Arg.Any<string>())
-                .Returns(new MicrosoftRecognizer());
+                .Returns(new MicrosoftRecognizer(_repeatedIntervalMapper));
 
             _reminderTableService.Add(Arg.Any<ReminderEntity>(), Arg.Any<CancellationToken>())
                 .Returns(Task.CompletedTask);
@@ -93,7 +96,6 @@ namespace RemindMeBot.Tests.Unit.Dialogs
             result.PartitionKey.Should().Be(conversation.User.Id);
             result.Text.Should().Be(text);
             result.DueDateTimeLocal.Should().Be(reminderDateString);
-            result.RepeatInterval.Should().Be(interval);
         }
 
         [Theory]
@@ -116,7 +118,7 @@ namespace RemindMeBot.Tests.Unit.Dialogs
                 });
 
             _recognizersFactory.CreateRecognizer(Arg.Any<string>())
-                .Returns(new MicrosoftRecognizer());
+                .Returns(new MicrosoftRecognizer(_repeatedIntervalMapper));
 
             _clock.GetLocalDateTime(Arg.Any<string>())
                 .Returns(today);

@@ -62,7 +62,6 @@ namespace RemindMeBot.Tests.Unit.Dialogs
                     Text = "Mom's birthday",
                     DueDateTimeLocal = secondReminderTime,
                     TimeZone = "Europe/Kyiv",
-                    RepeatInterval = "yearly",
                     RowKey = Guid.NewGuid().ToString(),
                 }
             };
@@ -123,7 +122,6 @@ namespace RemindMeBot.Tests.Unit.Dialogs
                     Text = "Mom's birthday",
                     DueDateTimeLocal = "11/11/2023 00:00:00",
                     TimeZone = "Europe/Kyiv",
-                    RepeatInterval = "yearly",
                     RowKey = Guid.NewGuid().ToString(),
                 }
             };
@@ -169,7 +167,6 @@ namespace RemindMeBot.Tests.Unit.Dialogs
                     Text = "Mom's birthday",
                     DueDateTimeLocal = "11/11/2023 00:00:00",
                     TimeZone = "Europe/Kyiv",
-                    RepeatInterval = "yearly",
                     RowKey = Guid.NewGuid().ToString(),
                 }
             };
@@ -215,7 +212,6 @@ namespace RemindMeBot.Tests.Unit.Dialogs
                     Text = "Mom's birthday",
                     DueDateTimeLocal = "11/11/2023 00:00:00",
                     TimeZone = "Europe/Kyiv",
-                    RepeatInterval = "yearly",
                     RowKey = Guid.NewGuid().ToString(),
                 }
             };

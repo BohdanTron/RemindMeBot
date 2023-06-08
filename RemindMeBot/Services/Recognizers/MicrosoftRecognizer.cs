@@ -9,9 +9,13 @@ namespace RemindMeBot.Services.Recognizers
 {
     public class MicrosoftRecognizer : IReminderRecognizer
     {
+        private readonly RepeatedIntervalMapper _repeatedIntervalMapper;
         private const string PrepositionsRegex = @"\s+(at|on|in|by|for|after|before|around|until)$";
 
         public string[] SupportedCultures { get; } = { "en-US" };
+
+        public MicrosoftRecognizer(RepeatedIntervalMapper repeatedIntervalMapper) =>
+            _repeatedIntervalMapper = repeatedIntervalMapper;
 
         public Task<RecognizedReminder?> RecognizeReminder(string input, DateTime refDateTime)
         {
@@ -20,7 +24,7 @@ namespace RemindMeBot.Services.Recognizers
             var results = DateTimeRecognizer.RecognizeDateTime(input, culture, DateTimeOptions.TasksMode, refTime: refDateTime);
             var result = results.FirstOrDefault();
 
-            var values = (List<Dictionary<string, string>>?)result?.Resolution?["values"];
+            var values = (List<Dictionary<string, string>>?) result?.Resolution?["values"];
             if (values is null)
             {
                 return Task.FromResult<RecognizedReminder?>(null);
@@ -44,21 +48,14 @@ namespace RemindMeBot.Services.Recognizers
 
                 if (resolution.IntervalType is null)
                 {
-                    return Task.FromResult<RecognizedReminder?>(new RecognizedReminder(text, dateTime.Value, null));
+                    return Task.FromResult<RecognizedReminder?>(new RecognizedReminder(text, dateTime.Value, RepeatedInterval.None));
                 }
                 if (resolution.IntervalSize != 1)
                 {
                     return Task.FromResult<RecognizedReminder?>(null);
                 }
 
-                var interval = resolution.IntervalType switch
-                {
-                    "D" => "daily",
-                    "W" => "weekly",
-                    "M" => "monthly",
-                    "Y" => "yearly",
-                    _ => throw new ArgumentOutOfRangeException(nameof(resolution.IntervalType))
-                };
+                var interval = _repeatedIntervalMapper.MapToEnum(resolution.IntervalType);
 
                 return Task.FromResult<RecognizedReminder?>(new RecognizedReminder(text, dateTime.Value, interval));
             }
