@@ -30,7 +30,7 @@ namespace RemindMeBot.Tests.Unit.Dialogs
 
         public ReminderListDialogTests(ITestOutputHelper output) : base(output)
         {
-            _sut = new RemindersListDialog(_stateService, _reminderTableService, Localizer);
+            _sut = new RemindersListDialog(_stateService, _reminderTableService, new RepeatedIntervalMapper(Localizer), Localizer);
         }
 
         [Theory]

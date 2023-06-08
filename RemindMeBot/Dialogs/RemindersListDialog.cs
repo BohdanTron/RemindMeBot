@@ -3,6 +3,7 @@ using Microsoft.Bot.Builder;
 using Microsoft.Bot.Builder.Dialogs;
 using Microsoft.Bot.Schema;
 using Microsoft.Extensions.Localization;
+using RemindMeBot.Models;
 using RemindMeBot.Resources;
 using RemindMeBot.Services;
 
@@ -11,14 +12,18 @@ namespace RemindMeBot.Dialogs
     public class RemindersListDialog : CancelDialog
     {
         private readonly ReminderTableService _reminderTableService;
+        private readonly RepeatedIntervalMapper _intervalMapper;
+
         private readonly IStringLocalizer<BotMessages> _localizer;
 
         public RemindersListDialog(
             IStateService stateService,
             ReminderTableService reminderTableService,
+            RepeatedIntervalMapper intervalMapper,
             IStringLocalizer<BotMessages> localizer) : base(nameof(AddReminderDialog), stateService, localizer)
         {
             _reminderTableService = reminderTableService;
+            _intervalMapper = intervalMapper;
             _localizer = localizer;
 
             AddDialog(new WaterfallDialog($"{nameof(RemindersListDialog)}.main",
@@ -52,8 +57,15 @@ namespace RemindMeBot.Dialogs
                 reminders.Select((reminder, index) =>
                 {
                     var date = DateTime.ParseExact(reminder.DueDateTimeLocal, "G", CultureInfo.InvariantCulture, DateTimeStyles.None);
+                    
+                    if (reminder.RepeatedInterval == RepeatedInterval.None)
+                    {
+                        return $"{index + 1}) *{reminder.Text}* \n📅  {date.ToString("g", CultureInfo.CurrentCulture)}\n"; ;
+                    }
 
-                    return $"{index + 1}) *{reminder.Text}* \n📅  {date.ToString("g", CultureInfo.CurrentCulture)}\n";
+                    var interval = _intervalMapper.MapToLocalizedString(reminder.RepeatedInterval);
+
+                    return $"{index + 1}) *{reminder.Text}* \n📅  {date.ToString("g", CultureInfo.CurrentCulture)} - {interval}\n";
                 }));
 
             var reminderListMsg = $"{_localizer[ResourceKeys.RemindersList]}\n\n{reminderList}";
