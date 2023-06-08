@@ -74,7 +74,7 @@ namespace RemindMeBot.Dialogs.Prompts
 
                 if (turnContext.Activity.Locale == "uk-UA" && !IsNumeric(utterance))
                 {
-                    utterance = await _translationService.Translate(utterance, from: "uk-UA", to: "en-US");
+                    utterance = await _translationService.Translate($"нагадай {utterance}", from: "uk-UA", to: "en-US");
                 }
 
                 var refTime = turnContext.Activity.LocalTimestamp?.DateTime;
