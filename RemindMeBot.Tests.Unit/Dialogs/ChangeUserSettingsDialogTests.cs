@@ -187,7 +187,8 @@ namespace RemindMeBot.Tests.Unit.Dialogs
             reply.Text.Should().Be(Localizer[ResourceKeys.AskToChangeLocation]);
 
             // Step 3 - Change the location
-            reply = await testClient.SendActivityAsync<IMessageActivity>(newCity);
+            await testClient.SendActivityAsync<IMessageActivity>(newCity);
+            reply = testClient.GetNextReply<IMessageActivity>();
             reply.Text.Should().Be(Localizer[ResourceKeys.UserSettingsHaveBeenChanged]);
             await _reminderTableService.Received(1).BulkUpdate(Arg.Any<string>(), Arg.Any<IList<ReminderEntity>>(),
                 Arg.Any<CancellationToken>());
@@ -257,7 +258,8 @@ namespace RemindMeBot.Tests.Unit.Dialogs
             var invalidLocation = "InvalidLocation";
             _locationService.GetLocation(Arg.Any<string>()).Returns((Location?) null);
 
-            reply = await testClient.SendActivityAsync<IMessageActivity>(invalidLocation);
+            await testClient.SendActivityAsync<IMessageActivity>(invalidLocation);
+            reply = testClient.GetNextReply<IMessageActivity>();
             reply.Text.Should().Be(Localizer[ResourceKeys.AskToRetryLocation]);
 
             // Step 4 - Enter valid location
@@ -267,7 +269,8 @@ namespace RemindMeBot.Tests.Unit.Dialogs
             var newLocation = $"{newCity}, United States";
             _locationService.GetLocation(Arg.Any<string>()).Returns(new Location(newCity, newCountry, newTimeZone));
 
-            reply = await testClient.SendActivityAsync<IMessageActivity>(newLocation);
+            await testClient.SendActivityAsync<IMessageActivity>(newLocation);
+            reply = testClient.GetNextReply<IMessageActivity>();
             reply.Text.Should().Be(Localizer[ResourceKeys.UserSettingsHaveBeenChanged]);
 
             // Display new user's settings

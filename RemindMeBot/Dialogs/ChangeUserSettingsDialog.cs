@@ -2,6 +2,7 @@
 using Microsoft.Bot.Builder;
 using Microsoft.Bot.Builder.Dialogs;
 using Microsoft.Bot.Builder.Dialogs.Choices;
+using Microsoft.Bot.Schema;
 using Microsoft.Extensions.Localization;
 using RemindMeBot.Helpers;
 using RemindMeBot.Models;
@@ -197,7 +198,11 @@ namespace RemindMeBot.Dialogs
                 ? await _translationService.Translate(locationChoice, from: "uk-UA", to: "en-US")
                 : locationChoice;
 
-            var preciseLocation = await _locationService.GetLocation(translatedLocation);
+            var preciseLocationTask = _locationService.GetLocation(translatedLocation);
+
+            await stepContext.Context.SendActivityAsync(new Activity { Type = ActivityTypes.Typing }, cancellationToken);
+
+            var preciseLocation = await preciseLocationTask;
             if (preciseLocation is null)
             {
                 return false;

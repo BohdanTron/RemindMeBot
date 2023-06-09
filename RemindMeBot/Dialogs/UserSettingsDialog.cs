@@ -107,8 +107,12 @@ namespace RemindMeBot.Dialogs
             var locationTranslate = culture == "uk-UA"
                 ? await _translationService.Translate(location, "uk-UA", "en-US")
                 : location;
+            
+            var preciseLocationTask = _locationService.GetLocation(locationTranslate);
 
-            var preciseLocation = await _locationService.GetLocation(locationTranslate);
+            await stepContext.Context.SendActivityAsync(new Activity { Type = ActivityTypes.Typing }, cancellationToken);
+
+            var preciseLocation = await preciseLocationTask;
             if (preciseLocation is null)
             {
                 var retryMessage = _localizer[ResourceKeys.AskToRetryLocation];
