@@ -244,6 +244,10 @@ namespace RemindMeBot.Tests.Unit.Dialogs
                 yield return new object[] { "2022-12-31T23:59:59" }; // Past date and time
                 yield return new object[] { "Let's play a game" }; // No date or time information
                 yield return new object[] { "How are you?" }; // No date or time information
+                yield return new object[] { "smth every 2 minute" }; // No supported interval
+                yield return new object[] { "smth every 5 seconds" }; // No supported interval
+                yield return new object[] { "smth every 10 month" }; // No supported interval
+                yield return new object[] { "smth every 8 years" }; // No supported interval
             }
         }
     }

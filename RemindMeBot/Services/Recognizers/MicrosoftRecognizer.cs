@@ -46,13 +46,17 @@ namespace RemindMeBot.Services.Recognizers
                     continue;
                 }
 
+                if (resolution.IntervalType == string.Empty)
+                {
+                    continue;
+                }
                 if (resolution.IntervalType is null)
                 {
                     return Task.FromResult<RecognizedReminder?>(new RecognizedReminder(text, dateTime.Value, RepeatedInterval.None));
                 }
                 if (resolution.IntervalSize != 1)
                 {
-                    return Task.FromResult<RecognizedReminder?>(null);
+                    continue;
                 }
 
                 var interval = _repeatedIntervalMapper.MapToEnum(resolution.IntervalType);
@@ -83,7 +87,7 @@ namespace RemindMeBot.Services.Recognizers
             {
                 result.End = end;
             }
-            if (resolution.TryGetValue("intervalSize", out var intervalSize))
+            if (resolution.TryGetValue("intervalSize", out var intervalSize) && !string.IsNullOrEmpty(intervalSize))
             {
                 result.IntervalSize = int.Parse(intervalSize);
             }
