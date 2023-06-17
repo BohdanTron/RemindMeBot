@@ -1,3 +1,4 @@
+using System.Globalization;
 using Microsoft.Bot.Builder;
 using Microsoft.Bot.Builder.Integration.ApplicationInsights.Core;
 using Microsoft.Bot.Builder.Integration.AspNet.Core;
@@ -28,12 +29,16 @@ public class AdapterWithErrorHandler : CloudAdapter
 
         OnTurnError = async (turnContext, exception) =>
         {
+            CultureInfo.CurrentCulture = new CultureInfo(turnContext.Activity.Locale);
+            CultureInfo.CurrentUICulture = new CultureInfo(turnContext.Activity.Locale);
+
             // Log any leaked exception from the application.
             logger.LogError(exception, $"[OnTurnError] unhandled error : {exception.Message}");
             botTelemetryClient.TrackException(exception);
 
+
             // Send a message to the user
-            var errorMsg = localizer[ResourceKeys.UnexpectedError].Value;
+            var errorMsg = localizer[ResourceKeys.UnexpectedError];
             await turnContext.SendActivityAsync(MessageFactory.Text(errorMsg, errorMsg));
 
             if (conversationState is not null)
