@@ -27,15 +27,15 @@ namespace ReminderFunctions
         {
             logger.LogInformation($"Message from queue retrieved: {message}");
 
-            var remindedMsg = JsonConvert.DeserializeObject<ReminderCreatedMessage>(message);
+            var reminderMsg = JsonConvert.DeserializeObject<ReminderCreatedMessage>(message);
 
-            var instanceId = await starter.StartNewAsync(nameof(CreateReminder), input: remindedMsg);
+            var instanceId = await starter.StartNewAsync(nameof(CreateReminder), input: reminderMsg);
 
             logger.LogInformation("Started orchestration with ID = '{instanceId}'.", instanceId);
         }
 
         [FunctionName(nameof(CreateReminder))]
-        public static async Task<bool> CreateReminder([OrchestrationTrigger] IDurableOrchestrationContext context)
+        public static async Task CreateReminder([OrchestrationTrigger] IDurableOrchestrationContext context)
         {
             var message = context.GetInput<ReminderCreatedMessage>();
             var reminder = await context.CallActivityAsync<ReminderEntity>(nameof(GetReminder), message);
@@ -43,24 +43,20 @@ namespace ReminderFunctions
             var reminderDateTimeLocal = DateTime.ParseExact(reminder.DueDateTimeLocal, "G", CultureInfo.InvariantCulture, DateTimeStyles.None);
             var reminderDateTimeUtc = reminderDateTimeLocal.ToDateTimeUtc(reminder.TimeZone);
 
-            if (reminderDateTimeUtc <= context.CurrentUtcDateTime) return false;
+            if (reminderDateTimeUtc <= context.CurrentUtcDateTime) return;
 
             await context.CreateTimer(reminderDateTimeUtc, CancellationToken.None);
 
-            var succeeded = await context.CallSubOrchestratorAsync<bool>(nameof(SendReminder), message);
-
-            return succeeded;
+            await context.CallSubOrchestratorAsync<bool>(nameof(SendReminder), message);
         }
 
         [FunctionName(nameof(SendReminder))]
-        public static async Task<bool> SendReminder(
+        public static async Task SendReminder(
             [OrchestrationTrigger] IDurableOrchestrationContext context,
             ILogger logger)
         {
             var message = context.GetInput<ReminderCreatedMessage>();
-            var reminder = await context.CallActivityAsync<ReminderEntity?>(nameof(GetReminder), message);
-
-            if (reminder is null) return false;
+            var reminder = await context.CallActivityAsync<ReminderEntity>(nameof(GetReminder), message);
 
             var baseAddress = Environment.GetEnvironmentVariable("BotBaseAddress");
             var url = new Uri($"{baseAddress}/api/proactive-message/{reminder.PartitionKey}/{reminder.RowKey}");
@@ -76,38 +72,36 @@ namespace ReminderFunctions
                 logger.LogError(ex, "HTTP request to the proactive message endpoint failed");
             }
 
-            if (reminder.RepeatInterval == RepeatedInterval.None)
+            if (reminder.RepeatedInterval == RepeatedInterval.None)
             {
-                return await context.CallActivityAsync<bool>(nameof(DeleteReminder), reminder);
+                await context.CallActivityAsync<bool>(nameof(DeleteReminder), reminder);
+                return;
             }
 
             await context.CallActivityAsync(nameof(UpdateReminderDate), reminder);
             await context.CallActivityAsync(nameof(PublishMessage), message);
-
-            return true;
         }
 
         [FunctionName(nameof(GetReminder))]
-        public static async Task<ReminderEntity?> GetReminder(
+        public static async Task<ReminderEntity> GetReminder(
             [ActivityTrigger] ReminderCreatedMessage message,
             [Table("reminders")] TableClient tableClient,
             ILogger logger)
         {
             try
             {
-                var reminder = await tableClient.GetEntityIfExistsAsync<ReminderEntity>(message.PartitionKey, message.RowKey);
-
-                return reminder.HasValue ? reminder.Value : null;
+                var reminder = await tableClient.GetEntityAsync<ReminderEntity>(message.PartitionKey, message.RowKey);
+                return reminder;
             }
             catch (RequestFailedException ex)
             {
-                logger.LogError(ex, $"Request to get reminder failed, partitionKey = {message.PartitionKey}, rowKey = {message.RowKey}");
-                return null;
+                logger.LogError(ex, $"Reminder was not fount, partition key = {message.PartitionKey}, rowKey = {message.RowKey}");
+                throw;
             }
         }
 
         [FunctionName(nameof(DeleteReminder))]
-        public static async Task<bool> DeleteReminder(
+        public static async Task DeleteReminder(
             [ActivityTrigger] ReminderEntity reminder,
             [Table("reminders")] TableClient tableClient,
             ILogger logger)
@@ -115,12 +109,11 @@ namespace ReminderFunctions
             try
             {
                 await tableClient.DeleteEntityAsync(reminder.PartitionKey, reminder.RowKey);
-                return true;
             }
             catch (RequestFailedException ex)
             {
-                logger.LogError(ex, $"Deleting reminder with partitionKey = {reminder.PartitionKey} and rowKey = {reminder.RowKey} failed");
-                return false;
+                logger.LogError(ex, $"Deleting of reminder failed, partitionKey = {reminder.PartitionKey} and rowKey = {reminder.RowKey}");
+                throw;
             }
         }
 
@@ -132,13 +125,13 @@ namespace ReminderFunctions
         {
             var currentDateTime = DateTime.ParseExact(reminder.DueDateTimeLocal, "G", CultureInfo.InvariantCulture, DateTimeStyles.None);
 
-            var nextDateTime = reminder.RepeatInterval switch
+            var nextDateTime = reminder.RepeatedInterval switch
             {
                 RepeatedInterval.Daily => currentDateTime.AddDays(1),
                 RepeatedInterval.Weekly => currentDateTime.AddDays(7),
                 RepeatedInterval.Monthly => currentDateTime.AddMonths(1),
                 RepeatedInterval.Yearly => currentDateTime.AddYears(1),
-                _ => throw new InvalidOperationException($"Unsupported repeat interval: {reminder.RepeatInterval}")
+                _ => throw new InvalidOperationException($"Unsupported repeat interval: {reminder.RepeatedInterval}")
             };
             reminder.DueDateTimeLocal = nextDateTime.ToString("G", CultureInfo.InvariantCulture);
 
@@ -164,7 +157,7 @@ namespace ReminderFunctions
 
         public string DueDateTimeLocal { get; set; } = default!;
         public string TimeZone { get; set; } = default!;
-        public RepeatedInterval RepeatInterval { get; set; }
+        public RepeatedInterval RepeatedInterval { get; set; }
     }
 
     public enum RepeatedInterval
