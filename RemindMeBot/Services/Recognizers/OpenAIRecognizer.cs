@@ -20,7 +20,7 @@ namespace RemindMeBot.Services.Recognizers
         public string[] SupportedCultures { get; } = { "uk-UA" };
 
         public OpenAiRecognizer(
-            HttpClient httpClient, 
+            HttpClient httpClient,
             RepeatedIntervalMapper repeatedIntervalMapper,
             ILogger<OpenAiRecognizer> logger)
         {
@@ -60,7 +60,7 @@ namespace RemindMeBot.Services.Recognizers
             try
             {
                 var openAiResponse = JsonConvert.DeserializeObject<OpenAiResponse?>(responseBody);
-                
+
                 var message = openAiResponse?.Choices[0].Message;
                 if (message is null)
                 {
@@ -73,14 +73,26 @@ namespace RemindMeBot.Services.Recognizers
                     return null;
                 }
 
+                var dateTime = AdjustDateTime(refDateTime, content.DateTime);
                 var interval = _repeatedIntervalMapper.MapToEnum(content.RepeatedInterval);
 
-                return new RecognizedReminder(content.Text, content.DateTime, interval);
+                return new RecognizedReminder(content.Text, dateTime, interval);
             }
             catch
             {
                 return null;
             }
+        }
+
+        private static DateTime AdjustDateTime(DateTime refDateTime, DateTime recognizedDateTime)
+        {
+            // Use next day if the date is recognized but the time is passed
+            if (recognizedDateTime.Date == refDateTime.Date && recognizedDateTime.TimeOfDay < refDateTime.TimeOfDay)
+            {
+                return recognizedDateTime.AddDays(1);
+            }
+
+            return recognizedDateTime;
         }
     }
 
