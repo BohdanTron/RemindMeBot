@@ -35,10 +35,13 @@ namespace ReminderFunctions
         }
 
         [FunctionName(nameof(CreateReminder))]
-        public static async Task CreateReminder([OrchestrationTrigger] IDurableOrchestrationContext context)
+        public static async Task CreateReminder(
+            [OrchestrationTrigger] IDurableOrchestrationContext context)
         {
             var message = context.GetInput<ReminderCreatedMessage>();
-            var reminder = await context.CallActivityAsync<ReminderEntity>(nameof(GetReminder), message);
+            var reminder = await context.CallActivityAsync<ReminderEntity?>(nameof(GetReminder), message);
+
+            if (reminder is null) return;
 
             var reminderDateTimeLocal = DateTime.ParseExact(reminder.DueDateTimeLocal, "G", CultureInfo.InvariantCulture, DateTimeStyles.None);
             var reminderDateTimeUtc = reminderDateTimeLocal.ToDateTimeUtc(reminder.TimeZone);
@@ -56,7 +59,9 @@ namespace ReminderFunctions
             ILogger logger)
         {
             var message = context.GetInput<ReminderCreatedMessage>();
-            var reminder = await context.CallActivityAsync<ReminderEntity>(nameof(GetReminder), message);
+            var reminder = await context.CallActivityAsync<ReminderEntity?>(nameof(GetReminder), message);
+
+            if (reminder is null) return;
 
             var baseAddress = Environment.GetEnvironmentVariable("BotBaseAddress");
             var url = new Uri($"{baseAddress}/api/proactive-message/{reminder.PartitionKey}/{reminder.RowKey}");
@@ -83,20 +88,28 @@ namespace ReminderFunctions
         }
 
         [FunctionName(nameof(GetReminder))]
-        public static async Task<ReminderEntity> GetReminder(
+        public static async Task<ReminderEntity?> GetReminder(
             [ActivityTrigger] ReminderCreatedMessage message,
             [Table("reminders")] TableClient tableClient,
             ILogger logger)
         {
             try
             {
-                var reminder = await tableClient.GetEntityAsync<ReminderEntity>(message.PartitionKey, message.RowKey);
-                return reminder;
+                var reminder = await tableClient.GetEntityIfExistsAsync<ReminderEntity>(message.PartitionKey, message.RowKey);
+                if (reminder.HasValue)
+                {
+                    return reminder.Value;
+                }
+
+                logger.LogInformation(
+                    $"Reminder with partitionKey = {message.PartitionKey} and rowKey = {message.RowKey} wasn't found, it could be deleted.");
+
+                return null;
             }
             catch (RequestFailedException ex)
             {
-                logger.LogError(ex, $"Reminder was not fount, partition key = {message.PartitionKey}, rowKey = {message.RowKey}");
-                throw;
+                logger.LogError(ex, $"Request to get reminder failed, partitionKey = {message.PartitionKey}, rowKey = {message.RowKey}");
+                return null;
             }
         }
 
