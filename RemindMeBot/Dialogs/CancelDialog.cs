@@ -50,7 +50,7 @@ namespace RemindMeBot.Dialogs
         {
             if (innerDc.Context.Activity.Type != ActivityTypes.Message) return null;
 
-            var input = innerDc.Context.Activity.Text.ToLowerInvariant();
+            var input = innerDc.Context.Activity.Text?.ToLowerInvariant();
 
             if (input != "/cancel") return null;
 

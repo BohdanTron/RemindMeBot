@@ -99,7 +99,7 @@ namespace RemindMeBot.Dialogs
         {
             if (stepContext.Result is RemindersListDialogResult { ItemDeleted: false })
             {
-                if (stepContext.Context.Activity.Text.StartsWith("/"))
+                if (stepContext.Context.Activity.Text?.StartsWith("/") == true)
                 {
                     return await stepContext.ReplaceDialogAsync(Id, cancellationToken: cancellationToken);
                 }
