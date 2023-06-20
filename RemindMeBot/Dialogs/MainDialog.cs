@@ -56,7 +56,7 @@ namespace RemindMeBot.Dialogs
 
         private async Task<DialogTurnResult> ProcessInputStep(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
-            var input = stepContext.Context.Activity.Text.ToLowerInvariant();
+            var input = stepContext.Context.Activity.Text?.ToLowerInvariant();
 
             switch (input)
             {

@@ -32,6 +32,8 @@ namespace RemindMeBot.Tests.Unit.Dialogs
         private readonly ReminderTableService _reminderTableService = Substitute.ForPartsOf<ReminderTableService>(Substitute.For<TableServiceClient>());
         private readonly ReminderQueueService _reminderQueueService = Substitute.ForPartsOf<ReminderQueueService>(Substitute.For<QueueServiceClient>());
 
+        private readonly ISpeechTranscriptionService _speechTranscriptionService = Substitute.For<ISpeechTranscriptionService>();
+
         private readonly ReminderRecognizersFactory _recognizersFactory = Substitute.ForPartsOf<ReminderRecognizersFactory>(new List<IReminderRecognizer> { Substitute.For<IReminderRecognizer>() });
         private readonly RepeatedIntervalMapper _repeatedIntervalMapper;
 
@@ -39,8 +41,15 @@ namespace RemindMeBot.Tests.Unit.Dialogs
         {
             _repeatedIntervalMapper = new RepeatedIntervalMapper(Localizer);
 
-            _sut = new CreateQuickReminderDialog(_stateService, _clock, _reminderTableService, _reminderQueueService,
-                _recognizersFactory, _repeatedIntervalMapper, Localizer);
+            _sut = new CreateQuickReminderDialog(
+                _stateService, 
+                _clock, 
+                _speechTranscriptionService,
+                _reminderTableService, 
+                _reminderQueueService,
+                _recognizersFactory, 
+                _repeatedIntervalMapper, 
+                Localizer);
         }
 
 
@@ -87,6 +96,12 @@ namespace RemindMeBot.Tests.Unit.Dialogs
             reply.Type.Should().Be(ActivityTypes.Typing);
 
             reply = testClient.GetNextReply<IMessageActivity>();
+            reply.Type.Should().Be(ActivityTypes.Typing);
+
+            reply = testClient.GetNextReply<IMessageActivity>();
+            reply.Type.Should().Be(ActivityTypes.Typing);
+
+            reply = testClient.GetNextReply<IMessageActivity>();
             reply.Text.Should().Be(expectedReply);
 
             // Check dialog result
@@ -127,6 +142,12 @@ namespace RemindMeBot.Tests.Unit.Dialogs
 
             // Act / Assert
             var reply = await testClient.SendActivityAsync<IMessageActivity>(input);
+            reply.Type.Should().Be(ActivityTypes.Typing);
+
+            reply = testClient.GetNextReply<IMessageActivity>();
+            reply.Type.Should().Be(ActivityTypes.Typing);
+
+            reply = testClient.GetNextReply<IMessageActivity>();
             reply.Type.Should().Be(ActivityTypes.Typing);
 
             reply = testClient.GetNextReply<IMessageActivity>();

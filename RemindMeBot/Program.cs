@@ -67,6 +67,15 @@ builder.Services.AddHttpClient<IReminderRecognizer, OpenAiRecognizer>(client =>
 builder.Services.AddSingleton<IReminderRecognizer, MicrosoftRecognizer>();
 builder.Services.AddSingleton<ReminderRecognizersFactory>();
 
+// Configure speech recognition service
+builder.Services.AddHttpClient<ISpeechTranscriptionService, AzureSpeechTranscriptionService>(client =>
+{
+    var key = builder.Configuration["AzureSpeech:Key"];
+    var region = builder.Configuration["AzureSpeech:Region"];
+
+    return new AzureSpeechTranscriptionService(client, key, region);
+});
+
 // Create the Bot Framework Authentication to be used with the Bot Adapter
 builder.Services.AddSingleton<BotFrameworkAuthentication, ConfigurationBotFrameworkAuthentication>();
 
@@ -112,7 +121,7 @@ var app = builder.Build();
 app.UseSwagger();
 app.UseSwaggerUI();
 
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 
 app.MapPost("api/messages", (IBotFrameworkHttpAdapter adapter, IBot bot, HttpContext context, CancellationToken cancellationToken) =>
     adapter.ProcessAsync(context.Request, context.Response, bot, cancellationToken));

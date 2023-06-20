@@ -15,6 +15,7 @@ namespace RemindMeBot.Dialogs
     {
         private readonly IStateService _stateService;
         private readonly IClock _clock;
+        private readonly ISpeechTranscriptionService _speechTranscriptionService;
 
         private readonly ReminderTableService _reminderTableService;
         private readonly ReminderQueueService _reminderQueueService;
@@ -27,6 +28,7 @@ namespace RemindMeBot.Dialogs
         public CreateQuickReminderDialog(
             IStateService stateService,
             IClock clock,
+            ISpeechTranscriptionService speechTranscriptionService,
             ReminderTableService reminderTableService,
             ReminderQueueService reminderQueueService,
             ReminderRecognizersFactory recognizersFactory,
@@ -35,13 +37,14 @@ namespace RemindMeBot.Dialogs
         {
             _stateService = stateService;
             _clock = clock;
+            _speechTranscriptionService = speechTranscriptionService;
             _reminderTableService = reminderTableService;
             _reminderQueueService = reminderQueueService;
             _recognizersFactory = recognizersFactory;
             _recognizersFactory = recognizersFactory;
             _repeatedIntervalMapper = repeatedIntervalMapper;
             _localizer = localizer;
-            
+
 
             AddDialog(new WaterfallDialog($"{nameof(CreateQuickReminderDialog)}.main",
                 new WaterfallStep[]
@@ -53,13 +56,26 @@ namespace RemindMeBot.Dialogs
             InitialDialogId = $"{nameof(CreateQuickReminderDialog)}.main";
         }
 
-        private async Task<DialogTurnResult> ProcessUserInputStep(WaterfallStepContext stepContext, CancellationToken cancellationToken)
+        private async Task<DialogTurnResult> ProcessUserInputStep(WaterfallStepContext stepContext,
+            CancellationToken cancellationToken)
         {
-            var userSettings = await _stateService.UserSettingsPropertyAccessor.GetAsync(stepContext.Context,
+            var audioTranscript = GetAudioTranscript(stepContext);
+
+            await stepContext.Context.SendActivityAsync(new Activity { Type = ActivityTypes.Typing }, cancellationToken);
+
+            var userSettings = _stateService.UserSettingsPropertyAccessor.GetAsync(stepContext.Context,
                 () => new UserSettings(), cancellationToken);
 
-            var input = stepContext.Context.Activity.Text;
-            var localDateTime = _clock.GetLocalDateTime(userSettings.TimeZone!).DateTime;
+            await stepContext.Context.SendActivityAsync(new Activity { Type = ActivityTypes.Typing }, cancellationToken);
+
+            var input = await audioTranscript ?? stepContext.Context.Activity.Text;
+            if (input is null)
+            {
+                return await ReminderNotRecognized(stepContext, cancellationToken);
+            }
+
+            var userTimeZone = (await userSettings).TimeZone!;
+            var localDateTime = _clock.GetLocalDateTime(userTimeZone).DateTime;
 
             var recognizer = _recognizersFactory.CreateRecognizer(stepContext.Context.Activity.Locale);
             var reminderTask = recognizer.RecognizeReminder(input, localDateTime);
@@ -69,12 +85,9 @@ namespace RemindMeBot.Dialogs
             var reminder = await reminderTask;
             if (reminder is null)
             {
-                var notRecognizedMsg = _localizer[ResourceKeys.ReminderNotRecognized];
-                await stepContext.Context.SendActivityAsync(MessageFactory.Text(notRecognizedMsg, notRecognizedMsg),
-                    cancellationToken: cancellationToken);
-
-                return await stepContext.EndDialogAsync(cancellationToken: cancellationToken);
+                return await ReminderNotRecognized(stepContext, cancellationToken);
             }
+
             var conversation = stepContext.Context.Activity.GetConversationReference();
             var reminderEntity = new ReminderEntity
             {
@@ -83,7 +96,7 @@ namespace RemindMeBot.Dialogs
                 Text = reminder.Text,
                 DueDateTimeLocal = reminder.DateTime.ToString("G", CultureInfo.InvariantCulture),
                 RepeatedInterval = reminder.RepeatedInterval,
-                TimeZone = userSettings.TimeZone!,
+                TimeZone = userTimeZone,
                 ConversationReference = JsonConvert.SerializeObject(conversation)
             };
 
@@ -97,9 +110,30 @@ namespace RemindMeBot.Dialogs
                 ? _localizer[ResourceKeys.ReminderAdded, reminder.Text, displayDate]
                 : _localizer[ResourceKeys.RepeatedReminderAdded, reminder.Text, displayDate, displayInterval];
 
-            await stepContext.Context.SendActivityAsync(MessageFactory.Text(reminderAddedMsg, reminderAddedMsg), cancellationToken);
+            await stepContext.Context.SendActivityAsync(MessageFactory.Text(reminderAddedMsg, reminderAddedMsg),
+                cancellationToken);
 
             return await stepContext.EndDialogAsync(reminderEntity, cancellationToken);
+        }
+
+        private Task<string?> GetAudioTranscript(WaterfallStepContext stepContext)
+        {
+            var language = stepContext.Context.Activity.Locale;
+
+            var audio = stepContext.Context.Activity.Attachments?.FirstOrDefault(a => a.ContentType == "audio/ogg");
+
+            return audio is null
+                ? Task.FromResult<string?>(null)
+                : _speechTranscriptionService.Transcribe(audio.ContentType, audio.ContentUrl, language);
+        }
+
+        private async Task<DialogTurnResult> ReminderNotRecognized(WaterfallStepContext stepContext, CancellationToken cancellationToken)
+        {
+            var notRecognizedMsg = _localizer[ResourceKeys.ReminderNotRecognized];
+            await stepContext.Context.SendActivityAsync(MessageFactory.Text(notRecognizedMsg, notRecognizedMsg),
+                cancellationToken: cancellationToken);
+
+            return await stepContext.EndDialogAsync(cancellationToken: cancellationToken);
         }
     }
 }
