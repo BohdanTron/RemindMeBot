@@ -35,5 +35,6 @@
         public const string AskToChangeLocation = nameof(AskToChangeLocation);
         public const string ReminderNotRecognized = nameof(ReminderNotRecognized);
         public const string WhatToRemindYouAbout = nameof(WhatToRemindYouAbout);
+        public const string ReminderTimeConstraint = nameof(ReminderTimeConstraint);
     }
 }

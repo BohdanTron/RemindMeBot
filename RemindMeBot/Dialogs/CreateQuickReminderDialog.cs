@@ -8,6 +8,7 @@ using RemindMeBot.Models;
 using RemindMeBot.Resources;
 using RemindMeBot.Services;
 using RemindMeBot.Services.Recognizers;
+using static RemindMeBot.Helpers.Constants;
 
 namespace RemindMeBot.Dialogs
 {
@@ -86,6 +87,16 @@ namespace RemindMeBot.Dialogs
             if (reminder is null)
             {
                 return await ReminderNotRecognized(stepContext, cancellationToken);
+            }
+
+            var differenceMinutes = (reminder.DateTime - localDateTime).TotalMinutes;
+            if (Math.Ceiling(differenceMinutes) < ReminderSetAheadMinutes)
+            {
+                var timeConstraintMsg = _localizer[ResourceKeys.ReminderTimeConstraint];
+                await stepContext.Context.SendActivityAsync(MessageFactory.Text(timeConstraintMsg, timeConstraintMsg),
+                    cancellationToken);
+
+                return await stepContext.EndDialogAsync(cancellationToken: cancellationToken);
             }
 
             var conversation = stepContext.Context.Activity.GetConversationReference();

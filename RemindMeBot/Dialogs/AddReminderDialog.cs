@@ -7,6 +7,7 @@ using Newtonsoft.Json;
 using RemindMeBot.Models;
 using RemindMeBot.Resources;
 using RemindMeBot.Services;
+using static RemindMeBot.Helpers.Constants;
 using DateTimePrompt = RemindMeBot.Dialogs.Prompts.DateTimePrompt;
 
 namespace RemindMeBot.Dialogs
@@ -92,13 +93,13 @@ namespace RemindMeBot.Dialogs
                 }, cancellationToken);
         }
 
-        private async Task<DialogTurnResult> AskToRetryReminderDateStep(WaterfallStepContext stepContext, CancellationToken cancellationToken)
+        private static async Task<DialogTurnResult> AskToRetryReminderDateStep(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
             var options = (Dictionary<string, string>) stepContext.Options;
 
             stepContext.Values["reminderText"] = options["reminderText"];
 
-            var retryMsg = _localizer[ResourceKeys.DateNotRecognized];
+            var retryMsg = options["retryMsg"];
             return await stepContext.PromptAsync($"{nameof(AddReminderDialog)}.reminderDate",
                 new PromptOptions
                 {
@@ -112,20 +113,34 @@ namespace RemindMeBot.Dialogs
             var reminderText = (string) stepContext.Values["reminderText"];
             var dateTimeResolutions = (List<DateTimeResolution>?) stepContext.Result;
 
-            var userSettings = await _stateService.UserSettingsPropertyAccessor.GetAsync(stepContext.Context,
-                () => new UserSettings(), cancellationToken);
+            var userTimeZone = (await _stateService.UserSettingsPropertyAccessor.GetAsync(stepContext.Context,
+                () => new UserSettings(), cancellationToken)).TimeZone!;
 
-            var recognizedDate = RecognizeDate(dateTimeResolutions, userSettings.TimeZone!);
-            if (recognizedDate is null)
+            var recognizedTime = RecognizeDateTime(dateTimeResolutions, userTimeZone);
+            if (recognizedTime is null)
             {
                 return await stepContext.ReplaceDialogAsync($"{nameof(AddReminderDialog)}.retryReminderDate",
                     new Dictionary<string, string>
                     {
-                        { nameof(reminderText), reminderText }
+                        { nameof(reminderText), reminderText },
+                        { "retryMsg", _localizer[ResourceKeys.DateNotRecognized] }
                     }, cancellationToken);
             }
 
-            stepContext.Values["reminderDate"] = recognizedDate.Value;
+            var userLocalTime = _clock.GetLocalDateTime(userTimeZone).DateTime;
+            var differenceMinutes = (recognizedTime.Value - userLocalTime).TotalMinutes;
+
+            if (Math.Ceiling(differenceMinutes) < ReminderSetAheadMinutes)
+            {
+                return await stepContext.ReplaceDialogAsync($"{nameof(AddReminderDialog)}.retryReminderDate",
+                    new Dictionary<string, string>
+                    {
+                        { nameof(reminderText), reminderText },
+                        { "retryMsg", _localizer[ResourceKeys.ReminderTimeConstraint] }
+                    }, cancellationToken);
+            }
+
+            stepContext.Values["reminderDate"] = recognizedTime.Value;
 
             var askWhetherRepeat = _localizer[ResourceKeys.AskWhetherToRepeatReminder];
             var retryPrompt = _localizer[ResourceKeys.OptionListRetryPrompt];
@@ -206,7 +221,7 @@ namespace RemindMeBot.Dialogs
             return await stepContext.EndDialogAsync(reminder, cancellationToken);
         }
 
-        private DateTime? RecognizeDate(List<DateTimeResolution>? dateTimeResolutions, string timeZone)
+        private DateTime? RecognizeDateTime(List<DateTimeResolution>? dateTimeResolutions, string timeZone)
         {
             if (dateTimeResolutions is null) return null;
 

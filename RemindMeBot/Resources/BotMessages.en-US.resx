@@ -223,4 +223,7 @@
   <data name="WhatToRemindYouAbout" xml:space="preserve">
     <value>What to remind you about?</value>
   </data>
+  <data name="ReminderTimeConstraint" xml:space="preserve">
+    <value>I'm unable to set reminders for less than 5 minutes from now. Please pick a time that's at least 5 minutes ahead</value>
+  </data>
 </root>
