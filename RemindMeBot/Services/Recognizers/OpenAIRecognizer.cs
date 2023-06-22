@@ -9,7 +9,7 @@ namespace RemindMeBot.Services.Recognizers
     public class OpenAiRecognizer : IReminderRecognizer
     {
         private const string SystemPrompt =
-            "You're an AI for a Ukrainian bot. Parse tasks (raw text without datetime part), reminder dates (various formats), and reference dates ('MM/dd/yyyy HH:mm:ss'). " +
+            "You're an AI for a Ukrainian bot. Parse raw text without datetime part, reminder dates (various formats), and reference dates ('MM/dd/yyyy HH:mm:ss'). " +
             "Output JSON with 'text', 'datetime', and 'repeatedInterval' ('daily', 'weekly', 'monthly', 'yearly', 'none'). " +
             "Reminder date and time should be future to reference date. Invalid input yields null.";
 
@@ -31,6 +31,10 @@ namespace RemindMeBot.Services.Recognizers
 
         public virtual async Task<RecognizedReminder?> RecognizeReminder(string input, DateTime refDateTime)
         {
+            var referenceDate = refDateTime.ToString(CultureInfo.InvariantCulture);
+            var reminderExampleDate = new DateTime(refDateTime.Year, refDateTime.Month, refDateTime.Day + 1, 8, 0, 0)
+                .ToString(CultureInfo.InvariantCulture);
+
             var body = new JObject
             {
                 ["model"] = "gpt-3.5-turbo",
@@ -46,7 +50,17 @@ namespace RemindMeBot.Services.Recognizers
                     new JObject
                     {
                         ["role"] = "user",
-                        ["content"] = $"{input}, reference date: {refDateTime.ToString(CultureInfo.InvariantCulture)}"
+                        ["content"] = $"Сходити на тренування кожного дня о 8, reference date: {referenceDate}",
+                    },
+                    new JObject
+                    {
+                        ["role"] = "assistant",
+                        ["content"] = $"{{\n  \"text\": \"Сходити на тренування\",\n  \"datetime\": \"{reminderExampleDate}\",\n  \"repeatedInterval\": \"daily\"\n}}"
+                    },
+                    new JObject
+                    {
+                        ["role"] = "user",
+                        ["content"] = $"{input}, reference date: {referenceDate}"
                     })
             };
 
