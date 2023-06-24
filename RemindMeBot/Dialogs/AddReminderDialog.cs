@@ -211,12 +211,16 @@ namespace RemindMeBot.Dialogs
             await _reminderTableService.Add(reminder, cancellationToken);
             await _reminderQueueService.PublishCreatedMessage(reminder, cancellationToken);
 
-            var displayDate = date.ToString("g", CultureInfo.CurrentCulture);
-            var reminderAddedMsg = shouldRepeat
-                ? _localizer[ResourceKeys.RepeatedReminderAdded, text, displayDate, repeatInterval!]
-                : _localizer[ResourceKeys.ReminderAdded, text, displayDate];
+            var displayDate = date.ToString("d", CultureInfo.CurrentCulture);
+            var displayTime = $"{date:t}";
 
+            var reminderAddedMsg = shouldRepeat
+                ? _localizer[ResourceKeys.RepeatedReminderAdded, text, displayDate, displayTime, repeatInterval!]
+                : _localizer[ResourceKeys.ReminderAdded, text, displayDate, displayTime];
             await stepContext.Context.SendActivityAsync(MessageFactory.Text(reminderAddedMsg, reminderAddedMsg), cancellationToken);
+
+            var creationTipMsg = _localizer[ResourceKeys.ReminderCreationTip];
+            await stepContext.Context.SendActivityAsync(MessageFactory.Text(creationTipMsg, creationTipMsg), cancellationToken);
 
             return await stepContext.EndDialogAsync(reminder, cancellationToken);
         }

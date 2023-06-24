@@ -20,6 +20,7 @@ using RemindMeBot.Services.Recognizers;
 using RemindMeBot.Tests.Unit.Common;
 using Xunit;
 using Xunit.Abstractions;
+using IClock = RemindMeBot.Services.IClock;
 
 namespace RemindMeBot.Tests.Unit.Dialogs
 {
@@ -42,13 +43,13 @@ namespace RemindMeBot.Tests.Unit.Dialogs
             _repeatedIntervalMapper = new RepeatedIntervalMapper(Localizer);
 
             _sut = new CreateQuickReminderDialog(
-                _stateService, 
-                _clock, 
+                _stateService,
+                _clock,
                 _speechTranscriptionService,
-                _reminderTableService, 
+                _reminderTableService,
                 _reminderQueueService,
-                _recognizersFactory, 
-                _repeatedIntervalMapper, 
+                _recognizersFactory,
+                _repeatedIntervalMapper,
                 Localizer);
         }
 
@@ -81,13 +82,15 @@ namespace RemindMeBot.Tests.Unit.Dialogs
             _reminderTableService.Add(Arg.Any<ReminderEntity>(), Arg.Any<CancellationToken>())
                 .Returns(Task.CompletedTask);
 
-            var reminderDate = today.Date.AddDays(days).AddHours(hours).AddMinutes(minutes);
-            var reminderDateString = reminderDate.ToString("G", CultureInfo.InvariantCulture);
 
-            var displayDate = reminderDate.ToString("g", CultureInfo.CurrentCulture);
+            var expectedDateTime = today.Date.AddDays(days).AddHours(hours).AddMinutes(minutes);
+            var expectedDateTimeString = expectedDateTime.ToString("G", CultureInfo.InvariantCulture);
+            var expectedDate = expectedDateTime.ToString("d", CultureInfo.CurrentCulture);
+            var expectedTime = $"{expectedDateTime:t}";
+
             var expectedReply = interval is null
-                ? Localizer[ResourceKeys.ReminderAdded, text, displayDate]
-                : Localizer[ResourceKeys.RepeatedReminderAdded, text, displayDate, interval];
+                ? Localizer[ResourceKeys.ReminderAdded, text, expectedDate, expectedTime]
+                : Localizer[ResourceKeys.RepeatedReminderAdded, text, expectedDate, expectedTime, interval];
 
             var testClient = new DialogTestClient(Channels.Test, _sut, middlewares: Middlewares);
 
@@ -110,7 +113,7 @@ namespace RemindMeBot.Tests.Unit.Dialogs
             var result = (ReminderEntity) testClient.DialogTurnResult.Result;
             result.PartitionKey.Should().Be(conversation.User.Id);
             result.Text.Should().Be(text);
-            result.DueDateTimeLocal.Should().Be(reminderDateString);
+            result.DueDateTimeLocal.Should().Be(expectedDateTimeString);
         }
 
         [Theory]

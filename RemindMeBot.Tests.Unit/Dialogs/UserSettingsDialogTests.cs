@@ -62,7 +62,7 @@ namespace RemindMeBot.Tests.Unit.Dialogs
             // Act / Assert
             // Step 1 - Choose language
             var reply = await testClient.SendActivityAsync<IMessageActivity>("/start");
-            reply.Text.Should().Be("Welcome to the RemindMe chatbot! Please choose your language: (1) English or (2) Українська");
+            reply.Text.Should().Be("Welcome to the RecallMe chatbot! Please choose your language: (1) English or (2) Українська");
 
             // Step 2 - Choose location
             reply = await testClient.SendActivityAsync<IMessageActivity>(language);
@@ -107,7 +107,7 @@ namespace RemindMeBot.Tests.Unit.Dialogs
 
             // Step 1
             var reply = await testClient.SendActivityAsync<IMessageActivity>("start");
-            reply.Text.Should().Be("Welcome to the RemindMe chatbot! Please choose your language: (1) English or (2) Українська");
+            reply.Text.Should().Be("Welcome to the RecallMe chatbot! Please choose your language: (1) English or (2) Українська");
             testClient.DialogTurnResult.Status.Should().Be(DialogTurnStatus.Waiting);
 
             // Step 2 (Invalid language)

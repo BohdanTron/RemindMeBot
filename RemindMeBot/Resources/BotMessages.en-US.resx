@@ -157,7 +157,7 @@
     <value>Please choose an option from the list:</value>
   </data>
   <data name="RepeatedReminderAdded" xml:space="preserve">
-    <value>Reminder added: *"{0}"* on *{1}*, repeating *{2}*</value>
+    <value>Reminder added: *"{0}"* on *{1}* at *{2}*, repeating *{3}*</value>
   </data>
   <data name="UnknownCommand" xml:space="preserve">
     <value>Unknown command. Please enter a valid command</value>
@@ -198,7 +198,7 @@
     <value>yearly</value>
   </data>
   <data name="ReminderAdded" xml:space="preserve">
-    <value>Reminder added: *"{0}"* on *{1}*</value>
+    <value>Reminder added: *"{0}"* on *{1}* at *{2}*</value>
   </data>
   <data name="UnexpectedError" xml:space="preserve">
     <value>Oops, something went wrong. Please try again later</value>
@@ -225,5 +225,8 @@
   </data>
   <data name="ReminderTimeConstraint" xml:space="preserve">
     <value>I'm unable to set reminders for less than 5 minutes from now. Please pick a time that's at least 5 minutes ahead</value>
+  </data>
+  <data name="ReminderCreationTip" xml:space="preserve">
+    <value>📝Please note that you can easily create reminders without any commands. Just send me your task or event, along with the date and optional time, and I'll take care of the rest for you</value>
   </data>
 </root>

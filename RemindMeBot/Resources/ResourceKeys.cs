@@ -36,5 +36,6 @@
         public const string ReminderNotRecognized = nameof(ReminderNotRecognized);
         public const string WhatToRemindYouAbout = nameof(WhatToRemindYouAbout);
         public const string ReminderTimeConstraint = nameof(ReminderTimeConstraint);
+        public const string ReminderCreationTip = nameof(ReminderCreationTip);
     }
 }

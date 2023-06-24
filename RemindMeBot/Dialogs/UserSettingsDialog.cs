@@ -56,7 +56,7 @@ namespace RemindMeBot.Dialogs
 
         private static Task<DialogTurnResult> AskForLanguageStep(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
-            const string welcomeMsg = "Welcome to the RemindMe chatbot! Please choose your language:";
+            const string welcomeMsg = "Welcome to the RecallMe chatbot! Please choose your language:";
             const string retryPrompt = "Please choose an option from the list:";
 
             return stepContext.PromptAsync($"{nameof(UserSettingsDialog)}.language",

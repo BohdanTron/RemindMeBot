@@ -85,7 +85,9 @@ namespace RemindMeBot.Tests.Unit.Dialogs
             _reminderTableService.Add(Arg.Any<ReminderEntity>(), Arg.Any<CancellationToken>())
                 .Returns(Task.CompletedTask);
 
-            var reminderDateTime = localDateTime.AddDays(1).Date.AddHours(14);
+            var expectedDateTime = localDateTime.AddDays(1).Date.AddHours(14);
+            var expectedDate = expectedDateTime.ToString("d", CultureInfo.CurrentCulture);
+            var expectedTime = $"{expectedDateTime:t}";
 
             var testClient = new DialogTestClient(Channels.Test, _sut, middlewares: Middlewares);
 
@@ -103,7 +105,10 @@ namespace RemindMeBot.Tests.Unit.Dialogs
             reply.Text.Should().Be($"{Localizer[ResourceKeys.AskForRepeatInterval]}\n\n   1. {Localizer[ResourceKeys.Daily]}\n   2. {Localizer[ResourceKeys.Weekly]}\n   3. {Localizer[ResourceKeys.Monthly]}\n   4. {Localizer[ResourceKeys.Yearly]}");
 
             reply = await testClient.SendActivityAsync<IMessageActivity>(Localizer[ResourceKeys.Weekly]);
-            reply.Text.Should().Be(Localizer[ResourceKeys.RepeatedReminderAdded, reminderText, reminderDateTime.ToString("g", CultureInfo.CurrentCulture), repeatInterval]);
+            reply.Text.Should().Be(Localizer[ResourceKeys.RepeatedReminderAdded, reminderText, expectedDate, expectedTime, repeatInterval]);
+
+            reply = testClient.GetNextReply<IMessageActivity>();
+            reply.Text.Should().Be(Localizer[ResourceKeys.ReminderCreationTip]);
 
             // Check dialog result
             var conversation = testClient.DialogContext.Context.Activity.GetConversationReference();
@@ -111,7 +116,7 @@ namespace RemindMeBot.Tests.Unit.Dialogs
 
             result.PartitionKey.Should().Be(conversation.User.Id);
             result.Text.Should().Be(reminderText);
-            result.DueDateTimeLocal.Should().Be(reminderDateTime.ToString("G", CultureInfo.InvariantCulture));
+            result.DueDateTimeLocal.Should().Be(expectedDateTime.ToString("G", CultureInfo.InvariantCulture));
             result.TimeZone.Should().Be(userSettings.TimeZone);
         }
 
@@ -162,7 +167,9 @@ namespace RemindMeBot.Tests.Unit.Dialogs
             _clock.GetLocalDateTime(timeZone)
                 .Returns(localDateTime);
 
-            var reminderDateTime = localDateTime.AddDays(1).Date.AddHours(14);
+            var expectedDateTime = localDateTime.AddDays(1).Date.AddHours(14);
+            var expectedDate = expectedDateTime.ToString("d", CultureInfo.CurrentCulture);
+            var expectedTime = $"{expectedDateTime:t}";
 
             var testClient = new DialogTestClient(Channels.Test, _sut, middlewares: Middlewares);
 
@@ -177,7 +184,10 @@ namespace RemindMeBot.Tests.Unit.Dialogs
             reply.Text.Should().Be($"{Localizer[ResourceKeys.AskWhetherToRepeatReminder]} (1) {Localizer[ResourceKeys.Yes]} or (2) {Localizer[ResourceKeys.No]}");
 
             reply = await testClient.SendActivityAsync<IMessageActivity>(Localizer[ResourceKeys.No]);
-            reply.Text.Should().Be(Localizer[ResourceKeys.ReminderAdded, reminderText, reminderDateTime.ToString("g", CultureInfo.CurrentCulture)]);
+            reply.Text.Should().Be(Localizer[ResourceKeys.ReminderAdded, reminderText, expectedDate, expectedTime]);
+
+            reply = testClient.GetNextReply<IMessageActivity>();
+            reply.Text.Should().Be(Localizer[ResourceKeys.ReminderCreationTip]);
 
             // Check dialog result
             var conversation = testClient.DialogContext.Context.Activity.GetConversationReference();
@@ -185,7 +195,7 @@ namespace RemindMeBot.Tests.Unit.Dialogs
             var result = (ReminderEntity) testClient.DialogTurnResult.Result;
             result.PartitionKey.Should().Be(conversation.User.Id);
             result.Text.Should().Be(reminderText);
-            result.DueDateTimeLocal.Should().Be(reminderDateTime.ToString("G", CultureInfo.InvariantCulture));
+            result.DueDateTimeLocal.Should().Be(expectedDateTime.ToString("G", CultureInfo.InvariantCulture));
         }
 
         [Theory]
@@ -197,7 +207,9 @@ namespace RemindMeBot.Tests.Unit.Dialogs
 
             ConfigureLocalization("en-US", "Europe/London", today);
 
-            var expectedReminderDate = today.Date.AddDays(days).AddHours(hours).AddMinutes(minutes);
+            var expectedDateTime = today.Date.AddDays(days).AddHours(hours).AddMinutes(minutes);
+            var expectedDate = expectedDateTime.ToString("d", CultureInfo.CurrentCulture);
+            var expectedTime = $"{expectedDateTime:t}";
 
             _stateService.UserSettingsPropertyAccessor
                 .GetAsync(Arg.Any<ITurnContext>(), Arg.Any<Func<UserSettings>>(), Arg.Any<CancellationToken>())
@@ -228,7 +240,10 @@ namespace RemindMeBot.Tests.Unit.Dialogs
             reply.Text.Should().Be($"{Localizer[ResourceKeys.AskWhetherToRepeatReminder]} (1) {Localizer[ResourceKeys.Yes]} or (2) {Localizer[ResourceKeys.No]}");
 
             reply = await testClient.SendActivityAsync<IMessageActivity>(Localizer[ResourceKeys.No]);
-            reply.Text.Should().Be(Localizer[ResourceKeys.ReminderAdded, "Reminder text", expectedReminderDate.ToString("g", CultureInfo.CurrentCulture)]);
+            reply.Text.Should().Be(Localizer[ResourceKeys.ReminderAdded, "Reminder text", expectedDate, expectedTime]);
+
+            reply = testClient.GetNextReply<IMessageActivity>();
+            reply.Text.Should().Be(Localizer[ResourceKeys.ReminderCreationTip]);
 
             // Check dialog result
             var conversation = testClient.DialogContext.Context.Activity.GetConversationReference();
@@ -236,7 +251,7 @@ namespace RemindMeBot.Tests.Unit.Dialogs
             var result = (ReminderEntity) testClient.DialogTurnResult.Result;
             result.PartitionKey.Should().Be(conversation.User.Id);
             result.Text.Should().Be("Reminder text");
-            result.DueDateTimeLocal.Should().Be(expectedReminderDate.ToString("G", CultureInfo.InvariantCulture));
+            result.DueDateTimeLocal.Should().Be(expectedDateTime.ToString("G", CultureInfo.InvariantCulture));
         }
 
         [Theory]
