@@ -12,6 +12,8 @@ RemindMeBot is a multilingual chatbot designed to aid you in managing your time 
 
 ## Tech
 
+![Bot Design](./Chatbot_Design.png)
+
 The Reminder Bot leverages the following technologies:
 
 - **C# and MS Bot Framework**: The chatbot's core functionality is built with this technology.
