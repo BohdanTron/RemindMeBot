@@ -32,7 +32,9 @@ namespace RemindMeBot.Services.Recognizers
         public virtual async Task<RecognizedReminder?> RecognizeReminder(string input, DateTime refDateTime)
         {
             var referenceDate = refDateTime.ToString(CultureInfo.InvariantCulture);
-            var reminderExampleDate = new DateTime(refDateTime.Year, refDateTime.Month, refDateTime.Day + 1, 8, 0, 0)
+            
+            var tomorrow = refDateTime.AddDays(1);
+            var responseDate = new DateTime(tomorrow.Year, tomorrow.Month, tomorrow.Day, 8, 0, 0)
                 .ToString(CultureInfo.InvariantCulture);
 
             var body = new JObject
@@ -55,7 +57,7 @@ namespace RemindMeBot.Services.Recognizers
                     new JObject
                     {
                         ["role"] = "assistant",
-                        ["content"] = $"{{\n  \"text\": \"Сходити на тренування\",\n  \"datetime\": \"{reminderExampleDate}\",\n  \"repeatedInterval\": \"daily\"\n}}"
+                        ["content"] = $"{{\n  \"text\": \"Сходити на тренування\",\n  \"datetime\": \"{responseDate}\",\n  \"repeatedInterval\": \"daily\"\n}}"
                     },
                     new JObject
                     {
