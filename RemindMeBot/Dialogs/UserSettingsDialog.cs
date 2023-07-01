@@ -137,9 +137,12 @@ namespace RemindMeBot.Dialogs
             var localTime = _clock.GetLocalDateTime(userSettings.TimeZone)
                 .ToString("t", CultureInfo.CurrentCulture);
 
-            var message = _localizer[ResourceKeys.UserCurrentSettings, language, userSettings.Location, preciseLocation.TimeZoneId, localTime];
+            var yourSettingsMsg = _localizer[ResourceKeys.UserCurrentSettings, language, userSettings.Location, preciseLocation.TimeZoneId, localTime];
+            await stepContext.Context.SendActivityAsync(MessageFactory.Text(yourSettingsMsg, yourSettingsMsg),
+                cancellationToken);
 
-            await stepContext.Context.SendActivityAsync(MessageFactory.Text(message, message), cancellationToken);
+            var howToMsg = _localizer[ResourceKeys.HowToCreateReminders];
+            await stepContext.Context.SendActivityAsync(MessageFactory.Text(howToMsg, howToMsg), cancellationToken);
 
             return await stepContext.EndDialogAsync(userSettings, cancellationToken);
         }

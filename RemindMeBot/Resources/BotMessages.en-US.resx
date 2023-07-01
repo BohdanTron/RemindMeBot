@@ -127,7 +127,7 @@
     <value>When should I remind you?</value>
   </data>
   <data name="AskForReminderText" xml:space="preserve">
-    <value>Please enter the title of the reminder</value>
+    <value>Please enter the title of the reminder (without date)</value>
   </data>
   <data name="AskSettingToChange" xml:space="preserve">
     <value>Which setting would you like to change?</value>
@@ -227,6 +227,9 @@
     <value>I'm unable to set reminders for less than 5 minutes from now. Please pick a time that's at least 5 minutes ahead</value>
   </data>
   <data name="ReminderCreationTip" xml:space="preserve">
-    <value>📝Please note that you can easily create reminders without any commands. Just send me your task or event, along with the date and optional time, and I'll take care of the rest for you</value>
+    <value>📝Please note that you can easily create reminders without any commands. Just send me your task or event, along with the date and optional time, and I'll take care of the rest for you. You can even send me a *voice* message with the reminder details</value>
+  </data>
+  <data name="HowToCreateReminders" xml:space="preserve">
+    <value>📝 You can use /add or just send a message like 'Call mom in 2 hours' or 'Workout every day at 8 AM'. *Voice* messages are welcome too (*no* commands needed)</value>
   </data>
 </root>
