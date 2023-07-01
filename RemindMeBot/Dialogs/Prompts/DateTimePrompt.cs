@@ -65,7 +65,7 @@ namespace RemindMeBot.Dialogs.Prompts
             var result = new PromptRecognizerResult<IList<DateTimeResolution>>();
             if (turnContext.Activity.Type == ActivityTypes.Message)
             {
-                var utterance = turnContext.Activity.AsMessageActivity().Text;
+                var utterance = turnContext.Activity.AsMessageActivity().Text?.ToLower();
                 if (string.IsNullOrEmpty(utterance))
                 {
                     state.TryAdd("result", result);
