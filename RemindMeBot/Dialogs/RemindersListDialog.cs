@@ -42,7 +42,14 @@ namespace RemindMeBot.Dialogs
             var conversation = stepContext.Context.Activity.GetConversationReference();
 
             var reminders = (await _reminderTableService.GetList(conversation.User.Id, cancellationToken))
-                .OrderBy(r => r.DueDateTimeLocal)
+                .Select(r => new
+                {
+                    r.RowKey,
+                    r.Text,
+                    r.RepeatedInterval,
+                    Date = DateTime.ParseExact(r.DueDateTimeLocal, "G", CultureInfo.InvariantCulture, DateTimeStyles.None)
+                })
+                .OrderBy(r => r.Date)
                 .ToList();
 
             if (!reminders.Any())
@@ -56,16 +63,16 @@ namespace RemindMeBot.Dialogs
             var reminderList = string.Join("\n",
                 reminders.Select((reminder, index) =>
                 {
-                    var date = DateTime.ParseExact(reminder.DueDateTimeLocal, "G", CultureInfo.InvariantCulture, DateTimeStyles.None);
-                    
+                    var date = reminder.Date.ToString("g", CultureInfo.CurrentCulture);
+
                     if (reminder.RepeatedInterval == RepeatedInterval.None)
                     {
-                        return $"{index + 1}) *{reminder.Text}* \n📅  {date.ToString("g", CultureInfo.CurrentCulture)}\n"; ;
+                        return $"{index + 1}) *{reminder.Text}* \n📅  {date}\n"; ;
                     }
 
                     var interval = _intervalMapper.MapToLocalizedString(reminder.RepeatedInterval);
 
-                    return $"{index + 1}) *{reminder.Text}* \n📅  {date.ToString("g", CultureInfo.CurrentCulture)} - {interval}\n";
+                    return $"{index + 1}) *{reminder.Text}* \n📅  {date} - {interval}\n";
                 }));
 
             var reminderListMsg = $"{_localizer[ResourceKeys.RemindersList]}\n\n{reminderList}";
