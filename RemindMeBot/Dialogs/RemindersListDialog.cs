@@ -1,8 +1,12 @@
 ﻿using System.Globalization;
+using Microsoft.AspNetCore.Http;
+using System.Threading;
 using Microsoft.Bot.Builder;
 using Microsoft.Bot.Builder.Dialogs;
 using Microsoft.Bot.Schema;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Localization;
+using RemindMeBot.Helpers;
 using RemindMeBot.Models;
 using RemindMeBot.Resources;
 using RemindMeBot.Services;
@@ -13,6 +17,7 @@ namespace RemindMeBot.Dialogs
     {
         private readonly ReminderTableService _reminderTableService;
         private readonly RepeatedIntervalMapper _intervalMapper;
+        private readonly IDistributedCache _cache;
 
         private readonly IStringLocalizer<BotMessages> _localizer;
 
@@ -20,10 +25,12 @@ namespace RemindMeBot.Dialogs
             IStateService stateService,
             ReminderTableService reminderTableService,
             RepeatedIntervalMapper intervalMapper,
+            IDistributedCache cache,
             IStringLocalizer<BotMessages> localizer) : base(nameof(AddReminderDialog), stateService, localizer)
         {
             _reminderTableService = reminderTableService;
             _intervalMapper = intervalMapper;
+            _cache = cache;
             _localizer = localizer;
 
             AddDialog(new WaterfallDialog($"{nameof(RemindersListDialog)}.main",
@@ -39,9 +46,9 @@ namespace RemindMeBot.Dialogs
 
         private async Task<DialogTurnResult> ShowRemindersStep(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
-            var conversation = stepContext.Context.Activity.GetConversationReference();
+            var userId = stepContext.Context.Activity.GetConversationReference().User.Id;
 
-            var reminders = (await _reminderTableService.GetList(conversation.User.Id, cancellationToken))
+            var reminders = (await GetFromCacheOrStorage(userId, cancellationToken))
                 .Select(r => new
                 {
                     r.RowKey,
@@ -51,7 +58,7 @@ namespace RemindMeBot.Dialogs
                 })
                 .OrderBy(r => r.Date)
                 .ToList();
-
+            
             if (!reminders.Any())
             {
                 var noRemindersMsg = _localizer[ResourceKeys.NoRemindersCreated];
@@ -125,6 +132,21 @@ namespace RemindMeBot.Dialogs
                 cancellationToken: cancellationToken);
 
             return await stepContext.ReplaceDialogAsync(Id, cancellationToken: cancellationToken);
+        }
+
+        private async Task<List<ReminderEntity>> GetFromCacheOrStorage(string userId, CancellationToken cancellationToken)
+        {
+            var cache = await _cache.GetRecord<List<ReminderEntity>>(userId);
+            if (cache?.Any() == true)
+            {
+                return cache;
+            }
+
+            var data = await _reminderTableService.GetList(userId, cancellationToken);
+
+            await _cache.SetRecord(userId, data);
+
+            return data;
         }
     }
 

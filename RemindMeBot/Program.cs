@@ -1,3 +1,4 @@
+using System.Reflection;
 using Azure.Storage.Queues;
 using AzureMapsToolkit;
 using Microsoft.ApplicationInsights.Extensibility;
@@ -85,6 +86,14 @@ builder.Services.AddSingleton<IBotFrameworkHttpAdapter, AdapterWithErrorHandler>
 // Configure Bot Telemetry via App Insights
 builder.Services.AddApplicationInsightsTelemetry(options =>
     options.ConnectionString = builder.Configuration["ApplicationInsights:ConnectionString"]);
+
+
+// Add Redis caching 
+builder.Services.AddStackExchangeRedisCache(options =>
+{
+    options.Configuration = builder.Configuration["Redis:ConnectionString"];
+    options.InstanceName = $"{Assembly.GetExecutingAssembly().GetName().Name}_";
+});
 
 builder.Services.AddSingleton<IBotTelemetryClient, BotTelemetryClient>();
 builder.Services.AddSingleton<ITelemetryInitializer, OperationCorrelationTelemetryInitializer>();

@@ -2,8 +2,10 @@
 using Microsoft.Bot.Builder;
 using Microsoft.Bot.Builder.Dialogs;
 using Microsoft.Bot.Builder.Dialogs.Choices;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Localization;
 using Newtonsoft.Json;
+using RemindMeBot.Helpers;
 using RemindMeBot.Models;
 using RemindMeBot.Resources;
 using RemindMeBot.Services;
@@ -19,6 +21,7 @@ namespace RemindMeBot.Dialogs
 
         private readonly ReminderTableService _reminderTableService;
         private readonly ReminderQueueService _reminderQueueService;
+        private readonly IDistributedCache _cache;
 
         private readonly RepeatedIntervalMapper _repeatedIntervalMapper;
 
@@ -30,6 +33,7 @@ namespace RemindMeBot.Dialogs
             IClock clock,
             ReminderTableService reminderTableService,
             ReminderQueueService reminderQueueService,
+            IDistributedCache cache,
             RepeatedIntervalMapper repeatedIntervalMapper,
             IStringLocalizer<BotMessages> localizer) : base(nameof(AddReminderDialog), stateService, localizer)
         {
@@ -37,6 +41,7 @@ namespace RemindMeBot.Dialogs
             _clock = clock;
             _reminderTableService = reminderTableService;
             _reminderQueueService = reminderQueueService;
+            _cache = cache;
             _repeatedIntervalMapper = repeatedIntervalMapper;
             _localizer = localizer;
 
@@ -197,9 +202,11 @@ namespace RemindMeBot.Dialogs
                 () => new UserSettings(), cancellationToken);
 
             var conversation = stepContext.Context.Activity.GetConversationReference();
+            var userId = conversation.User.Id;
+
             var reminder = new ReminderEntity
             {
-                PartitionKey = conversation.User.Id,
+                PartitionKey = userId,
                 RowKey = Guid.NewGuid().ToString(),
                 Text = text,
                 DueDateTimeLocal = date.ToString("G", CultureInfo.InvariantCulture),
@@ -209,6 +216,10 @@ namespace RemindMeBot.Dialogs
             };
 
             await _reminderTableService.Add(reminder, cancellationToken);
+
+            var allReminders = await _reminderTableService.GetList(userId, cancellationToken);
+            await _cache.SetRecord(userId, allReminders);
+
             await _reminderQueueService.PublishCreatedMessage(reminder, cancellationToken);
 
             var displayDate = date.ToString("d", CultureInfo.CurrentCulture);
