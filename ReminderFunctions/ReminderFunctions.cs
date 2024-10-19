@@ -36,25 +36,6 @@ namespace ReminderFunctions
 
         [FunctionName(nameof(CreateReminder))]
         public static async Task CreateReminder(
-            [OrchestrationTrigger] IDurableOrchestrationContext context)
-        {
-            var message = context.GetInput<ReminderCreatedMessage>();
-            var reminder = await context.CallActivityAsync<ReminderEntity?>(nameof(GetReminder), message);
-
-            if (reminder is null) return;
-
-            var reminderDateTimeLocal = DateTime.ParseExact(reminder.DueDateTimeLocal, "G", CultureInfo.InvariantCulture, DateTimeStyles.None);
-            var reminderDateTimeUtc = reminderDateTimeLocal.ToDateTimeUtc(reminder.TimeZone);
-
-            if (reminderDateTimeUtc <= context.CurrentUtcDateTime) return;
-
-            await context.CreateTimer(reminderDateTimeUtc, CancellationToken.None);
-
-            await context.CallSubOrchestratorAsync<bool>(nameof(SendReminder), message);
-        }
-
-        [FunctionName(nameof(SendReminder))]
-        public static async Task SendReminder(
             [OrchestrationTrigger] IDurableOrchestrationContext context,
             ILogger logger)
         {
@@ -63,6 +44,17 @@ namespace ReminderFunctions
 
             if (reminder is null) return;
 
+            // Create timer
+            var reminderDateTimeLocal = DateTime.ParseExact(reminder.DueDateTimeLocal, "G", CultureInfo.InvariantCulture, DateTimeStyles.None);
+            var reminderDateTimeUtc = reminderDateTimeLocal.ToDateTimeUtc(reminder.TimeZone);
+
+            if (reminderDateTimeUtc <= context.CurrentUtcDateTime) 
+                return;
+
+            await context.CreateTimer(reminderDateTimeUtc, CancellationToken.None);
+
+
+            // Send reminder
             var baseAddress = Environment.GetEnvironmentVariable("BotBaseAddress");
             var url = new Uri($"{baseAddress}/api/proactive-message/{reminder.PartitionKey}/{reminder.RowKey}");
 
